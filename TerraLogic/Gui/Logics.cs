@@ -17,9 +17,13 @@ namespace TerraLogic.Gui
     {
         static Regex ChunkRegex = new Regex("(\\d+),(\\d+):([^;]*);");
 
-        internal static Dictionary<string, Tile> TileMap = new Dictionary<string, Tile>() { };
-        internal static Dictionary<string, Tile> TilePreviews = new Dictionary<string, Tile>() { { "", null } };
+        internal static Dictionary<string, Tile> TileMap = new Dictionary<string, Tile>();
+        internal static Dictionary<string, Tile> TilePreviews = new Dictionary<string, Tile>();
         internal static ChunkArray2D WireUpdateArray = new ChunkArray2D(8);
+
+        internal static string[] Tools = new string[] { "remove" };
+        internal static Texture2D[] ToolTextures = new Texture2D[Tools.Length];
+        internal static Dictionary<string, string> ToolNames = new Dictionary<string, string> { { "remove", "Remove tile" } };
 
         public static Logics Instance;
 
@@ -49,6 +53,8 @@ namespace TerraLogic.Gui
         internal static string SelectedTileId = null;
         internal static Tile SelectedTilePreview = null;
 
+        internal static int SelectedToolId = -1;
+
         internal static byte SelectedWireColor = 0;
         internal static Color[] WireColorMapping = new Color[]
         {
@@ -73,6 +79,11 @@ namespace TerraLogic.Gui
             WireTL = content.Load<Texture2D>("Wires/WireJunctionTL");
             WireTR = content.Load<Texture2D>("Wires/WireJunctionTR");
 
+            for (int i = 0; i < Tools.Length; i++) 
+            {
+                ToolTextures[i] = content.Load<Texture2D>($"Tools/{Tools[i]}");
+            }
+
             foreach (Tile t in TileMap.Values) t.LoadContent(content);
         }
         public override void Draw(SpriteBatch spriteBatch)
@@ -91,25 +102,28 @@ namespace TerraLogic.Gui
                 for (int x = 0; x < TileArray.Width; x++)
                 {
                     Tile t = TileArray[x, y];
-                    if (t is null || !t.NeedsUpdate || t.Pos.X != x || t.Pos.Y != y) continue;
+                    if (t is null || (!t.NeedsUpdate && !t.NeedsContinuousUpdate) || t.Pos.X != x || t.Pos.Y != y) continue;
                     t.Update();
-                    t.NeedsUpdate = false;
+                    if (!t.NeedsContinuousUpdate) t.NeedsUpdate = false;
                 }
         }
 
         private void DrawTilePreview()
         {
-            if (SelectedTileId is null || !Hover) return;
+            if (!Hover) return;
 
+            if (SelectedTilePreview is null && SelectedToolId == -1) return;
 
             Point wp = (PanNZoom.ScreenToWorld(MousePosition) / TileVec).ToPoint();
-            if (SelectedTileId != "" && !CanSetTile(wp.X, wp.Y, SelectedTilePreview)) return;
+            if (SelectedTilePreview != null && !CanSetTile(wp.X, wp.Y, SelectedTilePreview)) return;
 
 
             TerraLogic.SpriteBatch.Begin(SpriteSortMode.Deferred, null, PanNZoom.Zoom > 1 ? SamplerState.PointWrap : SamplerState.LinearWrap, null, null);
-            if (SelectedTilePreview is null)
-                TerraLogic.SpriteBatch.Draw(TerraLogic.RedCross, PanNZoom.WorldToScreen(new Rectangle((int)wp.X * 16, (int)wp.Y * 16, 16, 16)), Color.White);
-            else SelectedTilePreview.Draw(new Rectangle((int)wp.X * 16, (int)wp.Y * 16, SelectedTilePreview.Size.X * 16, SelectedTilePreview.Size.Y * 16));
+            if (SelectedToolId != -1)
+                    TerraLogic.SpriteBatch.Draw(ToolTextures[SelectedToolId], PanNZoom.WorldToScreen(new Rectangle(wp.X * 16, wp.Y * 16, 16, 16)), Color.White);
+
+            else if (SelectedTilePreview != null)
+                SelectedTilePreview.Draw(new Rectangle(wp.X * 16, wp.Y * 16, SelectedTilePreview.Size.X * 16, SelectedTilePreview.Size.Y * 16));
             TerraLogic.SpriteBatch.End();
 
         }
@@ -125,6 +139,10 @@ namespace TerraLogic.Gui
                         SetTile(worldpos, SelectedTileId);
                     else if (SelectedWireColor < WireColorMapping.Length)
                         SetWire(worldpos.X, worldpos.Y, SelectedWireColor, true);
+                    else if (SelectedToolId > -1) switch (Tools[SelectedToolId]) 
+                        {
+                            case "remove": SetTile(worldpos, null); break;
+                        }
 
                 }
                 if (key == MouseKeys.Right)
@@ -132,8 +150,11 @@ namespace TerraLogic.Gui
                     if (SelectedWireColor < WireColorMapping.Length)
                         SetWire(worldpos.X, worldpos.Y, SelectedWireColor, false);
                     SelectedTileId = null;
+                    SelectedTilePreview = null;
+                    SelectedToolId = -1;
                 }
             }
+
             if (@event == EventType.Presssed || @event == EventType.Hold)
             {
 
@@ -204,16 +225,19 @@ namespace TerraLogic.Gui
             {
                 if (@event == EventType.Presssed)
                 {
-                    if (key == Keys.D1) SelectedWireColor = 0;
-                    else if (key == Keys.D2) SelectedWireColor = 1;
-                    else if (key == Keys.D3) SelectedWireColor = 2;
-                    else if (key == Keys.D4) SelectedWireColor = 3;
-                    else if (key == Keys.D5) SelectedWireColor = 4;
-                    else if (key == Keys.D6) SelectedWireColor = 5;
-                    else if (key == Keys.D7) SelectedWireColor = 6;
-                    else if (key == Keys.D8) SelectedWireColor = 7;
-                    else if (key == Keys.D9) SelectedWireColor = 8;
-
+                    switch (key)
+                    {
+                        case Keys.D1: SelectedWireColor = 0; break;
+                        case Keys.D2: SelectedWireColor = 1; break;
+                        case Keys.D3: SelectedWireColor = 2; break;
+                        case Keys.D4: SelectedWireColor = 3; break;
+                        case Keys.D5: SelectedWireColor = 4; break;
+                        case Keys.D6: SelectedWireColor = 5; break;
+                        case Keys.D7: SelectedWireColor = 6; break;
+                        case Keys.D8: SelectedWireColor = 7; break;
+                        case Keys.D9: SelectedWireColor = 8; break;
+                        case Keys.Escape: SelectedTileId = null; SelectedWireColor = 255; SelectedTilePreview = null; break;
+                    }
                 }
 
                 if (@event == EventType.Hold)

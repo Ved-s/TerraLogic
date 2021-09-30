@@ -2,8 +2,6 @@
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using TerraLogic.GuiElements;
 using TerraLogic.Tiles;
 
@@ -11,11 +9,11 @@ namespace TerraLogic.Gui
 {
     internal class TileSelector : UIElement
     {
-        public TileSelector(string name) : base(name) 
+        public TileSelector(string name) : base(name)
         {
             BackColor = new Color(32, 32, 32);
         }
-        
+
         public override Pos Height => 32;
         public override Pos Width => Logics.TilePreviews.Count * 32;
 
@@ -31,25 +29,23 @@ namespace TerraLogic.Gui
             HoverText = null;
             CurrentlyHoveredId = null;
 
-            foreach (KeyValuePair<string, Tile> kvp in Logics.TilePreviews) 
+
+            foreach (KeyValuePair<string, Tile> kvp in Logics.TilePreviews)
             {
                 if (Hover && MousePosition.X >= xpos && MousePosition.X < xpos + 32)
                 {
                     CurrentlyHoveredId = kvp.Key;
                     CurrentlyHoveredTile = kvp.Value;
-                    HoverText = (kvp.Key == "")? "Remove tile" : kvp.Value.DisplayName;
+                    HoverText = (kvp.Key == "") ? "Remove tile" : kvp.Value.DisplayName;
                     spriteBatch.Draw(TerraLogic.Pixel, new Rectangle(Bounds.X + xpos, Bounds.Y, 32, 32), new Color(64, 64, 64));
                 }
                 else if (Logics.SelectedTileId == kvp.Key) spriteBatch.Draw(TerraLogic.Pixel, new Rectangle(Bounds.X + xpos, Bounds.Y, 32, 32), new Color(48, 48, 48));
 
                 int sizeDiv = kvp.Value is null ? 1 : Math.Max(kvp.Value.Size.X, kvp.Value.Size.Y);
 
-                
-
                 Rectangle rect = new Rectangle(Bounds.X + xpos + 8, Bounds.Y + 8, (16 * (kvp.Value?.Size.X ?? 1)) / sizeDiv, (16 * (kvp.Value?.Size.Y ?? 1)) / sizeDiv);
 
-                if (kvp.Key != "") kvp.Value.Draw(rect, true);
-                else spriteBatch.Draw(TerraLogic.RedCross, rect, Color.White); 
+                kvp.Value.Draw(rect, true);
 
                 xpos += 32;
             }
@@ -57,11 +53,72 @@ namespace TerraLogic.Gui
 
         protected internal override void MouseKeyStateUpdate(MouseKeys key, EventType @event, Point pos)
         {
-            if (key == MouseKeys.Left && @event == EventType.Presssed && CurrentlyHoveredId != null) 
+            if (key == MouseKeys.Left && @event == EventType.Presssed && CurrentlyHoveredId != null)
             {
+                Logics.SelectedToolId = -1;
                 Logics.SelectedTileId = CurrentlyHoveredId;
                 Logics.SelectedTilePreview = CurrentlyHoveredTile;
                 Logics.SelectedWireColor = 255;
+
+            }
+        }
+
+    }
+
+    internal class ToolSelector : UIElement
+    {
+        public ToolSelector(string name) : base(name)
+        {
+            BackColor = new Color(32, 32, 32);
+        }
+
+        public override Pos Height => 32;
+        public override Pos Width => Logics.Tools.Length * 32;
+
+        int CurrentlyHoveredId = -1;
+
+        public override void Draw(SpriteBatch spriteBatch)
+        {
+            DrawBackground(spriteBatch);
+
+            int xpos = 0;
+
+            HoverText = null;
+            CurrentlyHoveredId = -1;
+
+            for (int i = 0; i < Logics.Tools.Length; i++)
+            {
+                string tool = Logics.Tools[i];
+                if (Hover && MousePosition.X >= xpos && MousePosition.X < xpos + 32)
+                {
+                    CurrentlyHoveredId = i;
+
+                    if (Logics.ToolNames.TryGetValue(tool, out string toolName)) HoverText = toolName;
+                    else HoverText = tool;
+                    spriteBatch.Draw(TerraLogic.Pixel, new Rectangle(Bounds.X + xpos, Bounds.Y, 32, 32), new Color(64, 64, 64));
+                }
+                else if (Logics.SelectedToolId == i) spriteBatch.Draw(TerraLogic.Pixel, new Rectangle(Bounds.X + xpos, Bounds.Y, 32, 32), new Color(48, 48, 48));
+
+                Rectangle rect = new Rectangle(Bounds.X + xpos + 8, Bounds.Y + 8, 16, 16);
+
+                spriteBatch.Draw(Logics.ToolTextures[i], rect, Color.White);
+
+                xpos += 32;
+            }
+
+
+        }
+
+        protected internal override void MouseKeyStateUpdate(MouseKeys key, EventType @event, Point pos)
+        {
+            if (key == MouseKeys.Left && @event == EventType.Presssed && CurrentlyHoveredId != -1)
+            {
+
+                Logics.SelectedToolId = CurrentlyHoveredId;
+                Logics.SelectedTileId = null;
+                Logics.SelectedTilePreview = null;
+                Logics.SelectedWireColor = 255;
+
             }
         }
 

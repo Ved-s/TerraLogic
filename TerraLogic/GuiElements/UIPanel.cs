@@ -12,10 +12,7 @@ namespace TerraLogic.GuiElements
 
         public override void Draw(SpriteBatch spriteBatch)
         {
-            spriteBatch.Begin();
             DrawBackground(spriteBatch);
-            spriteBatch.End();
-
             base.Draw(spriteBatch);
         }
     }

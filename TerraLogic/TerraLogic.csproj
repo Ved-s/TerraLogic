@@ -102,6 +102,7 @@
     <Compile Include="Tiles\LogicGate.cs" />
     <Compile Include="Tiles\LogicLamp.cs" />
     <Compile Include="Tiles\Tile.cs" />
+    <Compile Include="Tiles\Timer.cs" />
     <Compile Include="Util.cs" />
   </ItemGroup>
   <ItemGroup>

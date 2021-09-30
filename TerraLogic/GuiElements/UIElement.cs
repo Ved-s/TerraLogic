@@ -126,10 +126,14 @@ namespace TerraLogic.GuiElements
                 if (e.Bounds.Contains(pos) && e.Visible)
                 {
                     if (e.Sub.Count == 0) return e;
-                    else return e.GetHover(pos);
+                    else
+                    {
+                        UIElement hover = e.GetHover(pos);
+                        if (hover != null) return hover;
+                    }
                 }
             }
-            if (Bounds.Contains(pos)) return this;
+            if (Bounds.Contains(pos) && !HoverTransparentBackground) return this;
             return null;
         }
 
@@ -185,7 +189,7 @@ namespace TerraLogic.GuiElements
             return $"{Parent?.Name}/{Name ?? "null"} {Bounds.X},{Bounds.Y} {Bounds.Width}x{Bounds.Height}";
         }
 
-        public bool Enabled = true, InvisibleUpdate = false;
+        public bool Enabled = true, InvisibleUpdate = false, HoverTransparentBackground = false;
         public Rectangle Bounds;
         public ElementCollection Sub;
         private UIElement parent;

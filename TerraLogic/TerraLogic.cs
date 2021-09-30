@@ -1,14 +1,8 @@
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Audio;
-using Microsoft.Xna.Framework.Content;
-using Microsoft.Xna.Framework.GamerServices;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using Microsoft.Xna.Framework.Media;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using TerraLogic.GuiElements;
 
 namespace TerraLogic
@@ -21,7 +15,6 @@ namespace TerraLogic
 
         internal static Texture2D GridTex;
         internal static Texture2D Pixel;
-        internal static Texture2D RedCross;
 
         internal static SpriteFont Consolas12;
         internal static SpriteFont Consolas10;
@@ -38,7 +31,7 @@ namespace TerraLogic
             Instance = this;
             Graphics = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";
-            
+
         }
         protected override void Initialize()
         {
@@ -50,27 +43,7 @@ namespace TerraLogic
             {
                 Font = Consolas12,
                 Sub = {
-                    new UILabel("timingInfo")
-                    {
-                        Y = 0,
-                        X = Pos.Width("root") - Pos.Width(),
-                        BackColor = new Color(0,0,0,64),
-                        TextColor = Color.Lime,
-                        Font = Consolas8,
-                        OnUpdate = (e) =>
-                        {
-                            e.Text =
-                                $"{Instance.DrawTimeMS:0.000} ms frame\n" +
-                                $"{Instance.TickTimeMS:0.000} ms tick\n" +
-                                //$"{(Instance.DrawTimeMS == 0? 0 : 1000/ Instance.DrawTimeMS):0} fps max\n" +
-                                $"{Util.MakeSize((ulong)Process.GetCurrentProcess().PrivateMemorySize64)} priv";
-                        }
-                    },
-                    new Gui.TileSelector("tileSelect"),
-                    new Gui.WireColorSelector("wireColorSelect")
-                    {
-                        Y = Pos.Bottom("tileSelect")
-                    },
+
                     new Gui.Logics("logics")
                     {
                         X = 0,
@@ -79,55 +52,98 @@ namespace TerraLogic
                         Height = Pos.Height("root"),
                         Priority = int.MaxValue
                     },
-                    new Gui.FileSelector("fileSelect")
+
+                    new UIPanel("overlay")
                     {
-                        X = Pos.Right("root") - Pos.Width(),
-                        Y = Pos.Bottom("root") - Pos.Height(),
-                        Width = 300, Height = 300,
-                    },
-                    new UIButton("saveData")
-                    {
-                        X = Pos.Width("root") - Pos.Width() - 5,
-                        Y = Pos.Height("root") - Pos.Height() - 5,
-                        Width = 80,
-                        Height = 20,
-                        Text = "Save",
-                        BackColor = new Color(48, 48, 48),
-                        OutlineColor = new Color(64, 64, 64),
-                        HoverBackColor = new Color(64, 64, 64),
-                        OnClick = (caller) => 
+                        Width = Pos.Width("root"),
+                        Height = Pos.Height("root"),
+                        HoverTransparentBackground = true,
+                        Sub =
                         {
-                            caller.Visible = false;
-                            caller.GetElement(".loadData").Visible = false;
-                            (caller.GetElement(".fileSelect") as Gui.FileSelector).ShowDialog(true, (cancel, file) =>
+                            new UILabel("timingInfo")
                             {
-                                if (!cancel) Gui.Logics.SaveToFile(file);
-                                caller.Visible = true;
-                                caller.GetElement(".loadData").Visible = true;
-                            });
+                                Y = 0,
+                                X = Pos.Width("..") - Pos.Width(),
+                                BackColor = new Color(0,0,0,64),
+                                TextColor = Color.Lime,
+                                Font = Consolas8,
+                                OnUpdate = (e) =>
+                                {
+                                    e.Text =
+                                        $"{Instance.DrawTimeMS:0.000} ms frame\n" +
+                                        $"{Instance.TickTimeMS:0.000} ms tick\n" +
+                                        //$"{(Instance.DrawTimeMS == 0? 0 : 1000/ Instance.DrawTimeMS):0} fps max\n" +
+                                        $"{Util.MakeSize((ulong)Process.GetCurrentProcess().PrivateMemorySize64)} priv";
+                                }
+                            },
+                            new Gui.TileSelector("tileSelect"),
+                            new Gui.ToolSelector("toolSelect")
+                            {
+                                Y = Pos.Bottom("tileSelect")
+                            },
+                            new Gui.WireColorSelector("wireColorSelect")
+                            {
+                                Y = Pos.Bottom("toolSelect")
+                            },
+                            new Gui.FileSelector("fileSelect")
+                            {
+                                X = Pos.Right("..") - Pos.Width(),
+                                Y = Pos.Bottom("..") - Pos.Height(),
+                                Width = 300, Height = 300,
+                            },
+                            new UIButton("saveData")
+                            {
+                                X = Pos.Width("..") - Pos.Width() - 5,
+                                Y = Pos.Height("..") - Pos.Height() - 5,
+                                Width = 80,
+                                Height = 20,
+                                Text = "Save",
+                                BackColor = new Color(48, 48, 48),
+                                OutlineColor = new Color(64, 64, 64),
+                                HoverBackColor = new Color(64, 64, 64),
+                                OnClick = (caller) =>
+                                {
+                                    caller.Visible = false;
+                                    caller.GetElement(".loadData").Visible = false;
+                                    (caller.GetElement(".fileSelect") as Gui.FileSelector).ShowDialog(true, (cancel, file) =>
+                                    {
+                                        if (!cancel) Gui.Logics.SaveToFile(file);
+                                        caller.Visible = true;
+                                        caller.GetElement(".loadData").Visible = true;
+                                    });
+                                }
+                            },
+                            new UIButton("loadData")
+                            {
+                                X = Pos.Width("..") - Pos.Width() - 90,
+                                Y = Pos.Height("..") - Pos.Height() - 5,
+                                Width = 80,
+                                Height = 20,
+                                Text = "Load",
+                                OutlineColor = new Color(64, 64, 64),
+                                BackColor = new Color(48, 48, 48),
+                                HoverBackColor = new Color(64, 64, 64),
+                                OnClick = (caller) =>
+                                {
+                                    caller.Visible = false;
+                                    caller.GetElement(".saveData").Visible = false;
+                                    (caller.GetElement(".fileSelect") as Gui.FileSelector).ShowDialog(false, (cancel, file) =>
+                                    {
+                                        if (!cancel) Gui.Logics.LoadFromFile(file);
+                                        caller.Visible = true;
+                                        caller.GetElement(".saveData").Visible = true;
+                                    });
+                                }
+                            },
                         }
-                    },
-                    new UIButton("loadData")
+                    }
+                },
+                OnKeyUpdated = (caller, key, @event) => 
+                {
+                    if (key == Keys.F1 && @event == EventType.Presssed) 
                     {
-                        X = Pos.Width("root") - Pos.Width() - 90,
-                        Y = Pos.Height("root") - Pos.Height() - 5,
-                        Width = 80,
-                        Height = 20,
-                        Text = "Load",
-                        OutlineColor = new Color(64, 64, 64),
-                        BackColor = new Color(48, 48, 48),
-                        HoverBackColor = new Color(64, 64, 64),
-                        OnClick = (caller) =>
-                        {
-                            caller.Visible = false;
-                            caller.GetElement(".saveData").Visible = false;
-                            (caller.GetElement(".fileSelect") as Gui.FileSelector).ShowDialog(false, (cancel, file) =>
-                            {
-                                if (!cancel) Gui.Logics.LoadFromFile(file);
-                                caller.Visible = true;
-                                caller.GetElement(".saveData").Visible = true;
-                            });
-                        }
+                        UIElement overlay = caller.GetElement("overlay");
+                        overlay.Visible = !overlay.Visible;
                     }
                 }
             };
@@ -137,7 +153,6 @@ namespace TerraLogic
             SpriteBatch = new SpriteBatch(GraphicsDevice);
 
             GridTex = Content.Load<Texture2D>("GridTex");
-            RedCross = Content.Load<Texture2D>("RedCross");
             Pixel = new Texture2D(GraphicsDevice, 1, 1);
             Pixel.SetData(new Color[] { Color.White });
 
@@ -146,7 +161,7 @@ namespace TerraLogic
             Consolas8 = Content.Load<SpriteFont>("Consolas8");
 
             Gui.Logics.LoadTileContent(Content);
-            
+
         }
         protected override void UnloadContent()
         {

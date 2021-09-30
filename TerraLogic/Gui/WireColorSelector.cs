@@ -57,6 +57,7 @@ namespace TerraLogic.Gui
                 Logics.SelectedWireColor = (byte)(pos.Y / 18);
                 Logics.SelectedTileId = null;
                 Logics.SelectedTilePreview = null;
+                Logics.SelectedToolId = -1;
 
             }
         }
