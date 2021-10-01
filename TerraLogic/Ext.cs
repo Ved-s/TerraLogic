@@ -1,4 +1,5 @@
 ﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,6 +17,15 @@ namespace TerraLogic
         public static Rectangle PixelStretch(this Rectangle rect) 
         {
             return new Rectangle(rect.X - 1, rect.Y - 1, rect.Width + 2, rect.Height + 2);
+        }
+
+        public static void DrawStringShaded(this SpriteBatch spriteBatch, SpriteFont font, string text, Vector2 pos, Color textColor, Color shadowColor)
+        {
+            spriteBatch.DrawString(font, text, pos + new Vector2(0, -1), shadowColor);
+            spriteBatch.DrawString(font, text, pos + new Vector2(-1, 0), shadowColor);
+            spriteBatch.DrawString(font, text, pos + new Vector2(0, 1), shadowColor);
+            spriteBatch.DrawString(font, text, pos + new Vector2(1, 0), shadowColor);
+            spriteBatch.DrawString(font, text, pos, textColor);
         }
     }
 }

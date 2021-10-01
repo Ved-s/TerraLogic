@@ -68,10 +68,10 @@ namespace TerraLogic.GuiElements
 
             if (Shadow)
             {
-                spriteBatch.DrawString(Font, Text, pos + new Vector2(0, -1), ShadowDolor);
-                spriteBatch.DrawString(Font, Text, pos + new Vector2(-1, 0), ShadowDolor);
-                spriteBatch.DrawString(Font, Text, pos + new Vector2(0, 1), ShadowDolor);
-                spriteBatch.DrawString(Font, Text, pos + new Vector2(1, 0), ShadowDolor);
+                spriteBatch.DrawString(Font, Text, pos + new Vector2(0, -1), ShadowColor);
+                spriteBatch.DrawString(Font, Text, pos + new Vector2(-1, 0), ShadowColor);
+                spriteBatch.DrawString(Font, Text, pos + new Vector2(0, 1), ShadowColor);
+                spriteBatch.DrawString(Font, Text, pos + new Vector2(1, 0), ShadowColor);
             }
 
             spriteBatch.DrawString(Font, Text, pos, TextColor);
@@ -81,7 +81,7 @@ namespace TerraLogic.GuiElements
         public bool AutoSize = true;
         public bool CenterText = false;
         public bool Shadow = false;
-        public Color ShadowDolor = Color.Black;
+        public Color ShadowColor = Color.Black;
 
         
     }

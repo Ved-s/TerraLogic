@@ -1,5 +1,6 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Input;
 using TerraLogic.GuiElements;
 
 namespace TerraLogic.Gui
@@ -7,7 +8,9 @@ namespace TerraLogic.Gui
     internal class WireColorSelector : GuiElements.UIElement
     {
         public override Pos Width => 18;
-        public override Pos Height => (Gui.Logics.WireColorMapping.Length) * 18;
+        public override Pos Height => (Gui.Logics.WireColorMapping.Count) * 18 + (Locked || Gui.Logics.WireColorMapping.Count >= 32 ? 0 : 18);
+
+        bool Locked = false;
 
         public WireColorSelector(string name) : base(name)
         {
@@ -21,14 +24,21 @@ namespace TerraLogic.Gui
             int ypos = 3;
             Rectangle hover;
 
-            for (int i = 0; i < Gui.Logics.WireColorMapping.Length; i++)
+            HoverText = null;
+
+            for (int i = 0; i < Gui.Logics.WireColorMapping.Count; i++)
             {
+                Color c = Logics.WireColorMapping[i];
+
                 hover = new Rectangle(0, ypos - 3, 18, 18);
-                if (hover.Contains(MousePosition)) Graphics.FillRectangle(spriteBatch, hover.WithOffset(Bounds.Location), new Color(64, 64, 64));
+                if (hover.Contains(MousePosition))
+                {
+                    Graphics.FillRectangle(spriteBatch, hover.WithOffset(Bounds.Location), new Color(64, 64, 64));
+                    HoverText = c.PackedValue.ToString("x8").Substring(2) + (Locked? "" : "\nPress DEL to remove\nRight-Click to edit");
+                }
 
                 Rectangle rect = new Rectangle(3, ypos, 12, 12).WithOffset(Bounds.Location);
 
-                Color c = Logics.WireColorMapping[i];
                 if (Logics.SelectedWireColor != i)
                 {
                     c.R /= 2;
@@ -47,20 +57,89 @@ namespace TerraLogic.Gui
 
                 ypos += 18;
             }
+            if (!Locked && Gui.Logics.WireColorMapping.Count < 32)
+            {
+                hover = new Rectangle(0, ypos - 3, 18, 18);
+                if (hover.Contains(MousePosition))
+                {
+                    Graphics.FillRectangle(spriteBatch, hover.WithOffset(Bounds.Location), new Color(64, 64, 64));
+                    HoverText = "Add wire";
+                }
 
+                Graphics.FillRectangle(spriteBatch, new Rectangle(8, ypos, 2, 12).WithOffset(Bounds.Location), Color.White);
+                Graphics.FillRectangle(spriteBatch, new Rectangle(3, ypos + 5, 12, 2).WithOffset(Bounds.Location), Color.White);
+            }
         }
 
         protected internal override void MouseKeyStateUpdate(MouseKeys key, EventType @event, Point pos)
         {
             if (@event == EventType.Presssed && key == MouseKeys.Left)
             {
-                Logics.SelectedWireColor = (byte)(pos.Y / 18);
-                Logics.SelectedTileId = null;
-                Logics.SelectedTilePreview = null;
-                Logics.SelectedToolId = -1;
+                byte newColor = (byte)(pos.Y / 18);
 
+                if (newColor >= Logics.WireColorMapping.Count)
+                {
+                    if (Logics.WireColorMapping.Count >= 32) return;
+                    ColorSelector.Instance.X = Pos.Right(Name);
+                    ColorSelector.Instance.Y = Logics.WireColorMapping.Count < 6? Pos.Y(Name) : Pos.Bottom(Name) - Pos.Height();
+
+                    Locked = true;
+                    PositionRecalculateRequired = true;
+
+                    ColorSelector.Instance.ShowDialog(null, (cancel, color) =>
+                    {
+                        if (!cancel)
+                            Logics.WireColorMapping.Add((Color)color);
+                        Locked = false;
+                        PositionRecalculateRequired = true;
+                    });
+                }
+                else
+                {
+                    Logics.SelectedWireColor = newColor;
+                    Logics.SelectedTileId = null;
+                    Logics.SelectedTilePreview = null;
+                    Logics.SelectedToolId = -1;
+                }
+            }
+
+            if (@event == EventType.Presssed && key == MouseKeys.Right && !Locked)
+            {
+                byte id = (byte)(pos.Y / 18);
+
+                if (id < Logics.WireColorMapping.Count)
+                {
+                    ColorSelector.Instance.X = Pos.Right(Name);
+                    ColorSelector.Instance.Y = Logics.WireColorMapping.Count < 6 ? Pos.Y(Name) : Pos.Bottom(Name) - Pos.Height();
+
+                    Locked = true;
+                    PositionRecalculateRequired = true;
+
+                    ColorSelector.Instance.ShowDialog(Logics.WireColorMapping[id], (cancel, color) =>
+                    {
+                        Logics.WireColorMapping[id] = (Color)color;
+                        Locked = false;
+                        PositionRecalculateRequired = true;
+
+                    },
+                    (c) => Logics.WireColorMapping[id] = c);
+                }
             }
         }
+        protected internal override void KeyStateUpdate(Keys key, EventType @event)
+        {
+            base.KeyStateUpdate(key, @event);
 
+            if (Hover && @event == EventType.Presssed && key == Keys.Delete && !Locked)
+            {
+                byte id = (byte)(MousePosition.Y / 18);
+
+                if (id < Logics.WireColorMapping.Count)
+                {
+                    Logics.WireColorMapping.RemoveAt(id);
+                    PositionRecalculateRequired = true;
+                }
+            }
+        }
     }
 }

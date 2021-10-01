@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using TerraLogic.GuiElements;
@@ -56,7 +57,7 @@ namespace TerraLogic.Gui
         internal static int SelectedToolId = -1;
 
         internal static byte SelectedWireColor = 0;
-        internal static Color[] WireColorMapping = new Color[]
+        internal static List<Color> WireColorMapping = new List<Color>()
         {
             Color.Red,
             Color.Green,
@@ -91,7 +92,7 @@ namespace TerraLogic.Gui
             TerraLogic.SpriteBatch.End();
             DrawGrid();
             DrawTiles();
-            if (SelectedWireColor < WireColorMapping.Length || SelectedTileId != null) DrawWires();
+            if (SelectedWireColor < WireColorMapping.Count || SelectedTileId != null) DrawWires();
             DrawTilePreview();
             TerraLogic.SpriteBatch.Begin();
         }
@@ -137,7 +138,7 @@ namespace TerraLogic.Gui
                 {
                     if (SelectedTileId != null)
                         SetTile(worldpos, SelectedTileId);
-                    else if (SelectedWireColor < WireColorMapping.Length)
+                    else if (SelectedWireColor < WireColorMapping.Count)
                         SetWire(worldpos.X, worldpos.Y, SelectedWireColor, true);
                     else if (SelectedToolId > -1) switch (Tools[SelectedToolId]) 
                         {
@@ -147,7 +148,7 @@ namespace TerraLogic.Gui
                 }
                 if (key == MouseKeys.Right)
                 {
-                    if (SelectedWireColor < WireColorMapping.Length)
+                    if (SelectedWireColor < WireColorMapping.Count)
                         SetWire(worldpos.X, worldpos.Y, SelectedWireColor, false);
                     SelectedTileId = null;
                     SelectedTilePreview = null;
@@ -158,7 +159,7 @@ namespace TerraLogic.Gui
             if (@event == EventType.Presssed || @event == EventType.Hold)
             {
 
-                if (key == MouseKeys.Right && SelectedWireColor >= WireColorMapping.Length)
+                if (key == MouseKeys.Right && SelectedWireColor >= WireColorMapping.Count)
                 {
                     Tile t = TileArray[worldpos.X, worldpos.Y];
                     if (t != null)
@@ -175,7 +176,7 @@ namespace TerraLogic.Gui
         {
             string wires = WireArray.ToDataString();
 
-            StringBuilder builder = new StringBuilder();
+            StringBuilder tileBuilder = new StringBuilder();
             for (int y = 0; y < TileArray.Height; y++)
                 for (int x = 0; x < TileArray.Width; x++)
                 {
@@ -183,23 +184,27 @@ namespace TerraLogic.Gui
                     if (t is null) continue;
                     if (x != t.Pos.X || y != t.Pos.Y) continue;
 
-                    builder.Append(x);
-                    builder.Append(',');
-                    builder.Append(y);
-                    builder.Append(':');
+                    tileBuilder.Append(x);
+                    tileBuilder.Append(',');
+                    tileBuilder.Append(y);
+                    tileBuilder.Append(':');
                     string data = t.GetData();
                     if (data != null)
-                        builder.Append(t.Id + ":" + data);
+                        tileBuilder.Append(t.Id + ":" + data);
                     else
-                        builder.Append(t.Id);
+                        tileBuilder.Append(t.Id);
 
-                    builder.Append(';');
+                    tileBuilder.Append(';');
                 }
+
+
             using (StreamWriter file = File.CreateText(filename))
             {
                 file.Write(wires);
                 file.Write("\n");
-                file.Write(builder.ToString());
+                file.Write(tileBuilder.ToString());
+                file.Write("\n");
+                file.Write(string.Join(",", WireColorMapping.Select(c => c.PackedValue.ToString())));
             }
         }
 
@@ -217,6 +222,9 @@ namespace TerraLogic.Gui
                 Point pos = new Point(int.Parse(tile.Groups[1].Value), int.Parse(tile.Groups[2].Value));
                 SetTile(pos, tile.Groups[3].Value, true);
             }
+            if (lines.Length < 3) return;
+            WireColorMapping.Clear();
+            foreach (string c in lines[2].Split(',')) WireColorMapping.Add(new Color() { PackedValue = uint.Parse(c) });
         }
 
         protected internal override void KeyStateUpdate(Keys key, EventType @event)
@@ -294,10 +302,10 @@ namespace TerraLogic.Gui
                     bool blackDrawn = false;
 
                     bool anyTop = false, anyRight = false, anyBottom = false, anyLeft = false;
-                    bool[] top = new bool[WireColorMapping.Length];
-                    bool[] right = new bool[WireColorMapping.Length];
-                    bool[] bottom = new bool[WireColorMapping.Length];
-                    bool[] left = new bool[WireColorMapping.Length];
+                    bool[] top = new bool[WireColorMapping.Count];
+                    bool[] right = new bool[WireColorMapping.Count];
+                    bool[] bottom = new bool[WireColorMapping.Count];
+                    bool[] left = new bool[WireColorMapping.Count];
 
                     void CalcWire(byte id)
                     {
@@ -349,13 +357,13 @@ namespace TerraLogic.Gui
 
                     }
 
-                    for (byte id = 0; id < WireColorMapping.Length; id++)
+                    for (byte id = 0; id < WireColorMapping.Count; id++)
                         CalcWire(id);
 
-                    for (byte id = 0; id < WireColorMapping.Length; id++)
+                    for (byte id = 0; id < WireColorMapping.Count; id++)
                         if (id != SelectedWireColor) DrawWire(id, false);
 
-                    if (SelectedWireColor < WireColorMapping.Length)
+                    if (SelectedWireColor < WireColorMapping.Count)
                     {
                         DrawWire(SelectedWireColor, true);
                     }

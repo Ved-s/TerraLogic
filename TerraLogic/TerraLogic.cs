@@ -15,6 +15,7 @@ namespace TerraLogic
 
         internal static Texture2D GridTex;
         internal static Texture2D Pixel;
+        internal static Effect Gradient;
 
         internal static SpriteFont Consolas12;
         internal static SpriteFont Consolas10;
@@ -43,7 +44,6 @@ namespace TerraLogic
             {
                 Font = Consolas12,
                 Sub = {
-
                     new Gui.Logics("logics")
                     {
                         X = 0,
@@ -52,7 +52,6 @@ namespace TerraLogic
                         Height = Pos.Height("root"),
                         Priority = int.MaxValue
                     },
-
                     new UIPanel("overlay")
                     {
                         Width = Pos.Width("root"),
@@ -90,6 +89,10 @@ namespace TerraLogic
                                 X = Pos.Right("..") - Pos.Width(),
                                 Y = Pos.Bottom("..") - Pos.Height(),
                                 Width = 300, Height = 300,
+                            },
+                            new Gui.ColorSelector("colorSelect")
+                            {
+                                Y = Pos.Height("..") - Pos.Height(),
                             },
                             new UIButton("saveData")
                             {
@@ -137,6 +140,7 @@ namespace TerraLogic
                             },
                         }
                     }
+                    
                 },
                 OnKeyUpdated = (caller, key, @event) => 
                 {
@@ -153,6 +157,7 @@ namespace TerraLogic
             SpriteBatch = new SpriteBatch(GraphicsDevice);
 
             GridTex = Content.Load<Texture2D>("GridTex");
+            Gradient = Content.Load<Effect>("HGradient");
             Pixel = new Texture2D(GraphicsDevice, 1, 1);
             Pixel.SetData(new Color[] { Color.White });
 

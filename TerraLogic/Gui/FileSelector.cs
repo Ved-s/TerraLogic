@@ -2,6 +2,7 @@
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using TerraLogic.GuiElements;
@@ -149,6 +150,7 @@ namespace TerraLogic.Gui
                     OnClick = (caller) => 
                     {
                         Callback(true, null);
+                        Callback = null;
                         Visible = false;
                     }
                 },
@@ -176,7 +178,9 @@ namespace TerraLogic.Gui
                             file = files.Items[files.SelectedIndex] as string;
                         }
                         file = System.IO.Path.Combine(Path, file);
+
                         Callback(false, file);
+                        Callback = null;
                         Visible = false;
                     }
                 }
@@ -187,6 +191,9 @@ namespace TerraLogic.Gui
         public void ShowDialog(bool allowNonexistentFiles, DialogClosedDelegate callback) 
         {
             Visible = true;
+
+            Callback?.Invoke(true, null);
+
             Callback = callback;
             AllowNonexistentFiles = allowNonexistentFiles;
 

@@ -82,6 +82,7 @@
     <Compile Include="GuiElements\UIList.cs" />
     <Compile Include="GuiElements\UIPanel.cs" />
     <Compile Include="GuiElements\UIRoot.cs" />
+    <Compile Include="Gui\ColorSelector.cs" />
     <Compile Include="Gui\FileSelector.cs" />
     <Compile Include="Gui\Logics.cs" />
     <Compile Include="Gui\TileSelector.cs" />

@@ -131,5 +131,12 @@ namespace TerraLogic
                     if (array[x, y] != 0) return false;
             return true;
         }
+
+        public static int Constrain(int minIncl, int value, int maxIncl) 
+        {
+            if (value < minIncl) value = minIncl;
+            else if (value > maxIncl) value = maxIncl;
+            return value;
+        }
     }
 }
