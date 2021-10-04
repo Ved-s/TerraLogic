@@ -39,7 +39,7 @@ namespace TerraLogic.Tiles
             if (Counter == 0) SendSignal();
         }
 
-        public override void RightClick(bool held)
+        public override void RightClick(bool held, bool preview)
         {
             if (held) return;
             State = !State;
@@ -72,7 +72,7 @@ namespace TerraLogic.Tiles
         {
             if (data.Length < 2) return new Timer();
 
-            bool state = preview || data[0] == '+';
+            bool state = data[0] == '+';
             int type;
             if (!int.TryParse(data.Substring(1), out type)) type = 2;
 

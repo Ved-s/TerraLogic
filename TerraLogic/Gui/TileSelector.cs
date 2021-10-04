@@ -19,6 +19,7 @@ namespace TerraLogic.Gui
 
         string CurrentlyHoveredId = null;
         Tile CurrentlyHoveredTile = null;
+        Rectangle CurrentlyHoveredRect;
 
         public override void Draw(SpriteBatch spriteBatch)
         {
@@ -28,6 +29,7 @@ namespace TerraLogic.Gui
 
             HoverText = null;
             CurrentlyHoveredId = null;
+            CurrentlyHoveredTile = null;
 
 
             foreach (KeyValuePair<string, Tile> kvp in Logics.TilePreviews)
@@ -37,7 +39,7 @@ namespace TerraLogic.Gui
                     CurrentlyHoveredId = kvp.Key;
                     CurrentlyHoveredTile = kvp.Value;
                     HoverText = (kvp.Key == "") ? "Remove tile" : kvp.Value.DisplayName;
-                    spriteBatch.Draw(TerraLogic.Pixel, new Rectangle(Bounds.X + xpos, Bounds.Y, 32, 32), new Color(64, 64, 64));
+                    spriteBatch.Draw(TerraLogic.Pixel, CurrentlyHoveredRect = new Rectangle(Bounds.X + xpos, Bounds.Y, 32, 32), new Color(64, 64, 64));
                 }
                 else if (Logics.SelectedTileId == kvp.Key) spriteBatch.Draw(TerraLogic.Pixel, new Rectangle(Bounds.X + xpos, Bounds.Y, 32, 32), new Color(48, 48, 48));
 
@@ -55,11 +57,16 @@ namespace TerraLogic.Gui
         {
             if (key == MouseKeys.Left && @event == EventType.Presssed && CurrentlyHoveredId != null)
             {
+                if (Logics.SelectedToolId != -1) Logics.Tools[Logics.SelectedToolId].Deselected();
                 Logics.SelectedToolId = -1;
                 Logics.SelectedTileId = CurrentlyHoveredId;
                 Logics.SelectedTilePreview = CurrentlyHoveredTile;
                 Logics.SelectedWireColor = 255;
-
+                Logics.PastePreview = null;
+            }
+            if (key == MouseKeys.Right && @event != EventType.Released && CurrentlyHoveredTile != null)
+            {
+                CurrentlyHoveredTile.RightClick(@event == EventType.Hold, true);
             }
         }
 
@@ -73,7 +80,7 @@ namespace TerraLogic.Gui
         }
 
         public override Pos Height => 32;
-        public override Pos Width => Logics.Tools.Length * 32;
+        public override Pos Width => Logics.Tools.Count * 32;
 
         int CurrentlyHoveredId = -1;
 
@@ -86,39 +93,40 @@ namespace TerraLogic.Gui
             HoverText = null;
             CurrentlyHoveredId = -1;
 
-            for (int i = 0; i < Logics.Tools.Length; i++)
+            for (int i = 0; i < Logics.Tools.Count; i++)
             {
-                string tool = Logics.Tools[i];
+                Tools.Tool tool = Logics.Tools[i];
                 if (Hover && MousePosition.X >= xpos && MousePosition.X < xpos + 32)
                 {
                     CurrentlyHoveredId = i;
 
-                    if (Logics.ToolNames.TryGetValue(tool, out string toolName)) HoverText = toolName;
-                    else HoverText = tool;
+                    HoverText = tool.DisplayName;
                     spriteBatch.Draw(TerraLogic.Pixel, new Rectangle(Bounds.X + xpos, Bounds.Y, 32, 32), new Color(64, 64, 64));
                 }
                 else if (Logics.SelectedToolId == i) spriteBatch.Draw(TerraLogic.Pixel, new Rectangle(Bounds.X + xpos, Bounds.Y, 32, 32), new Color(48, 48, 48));
 
                 Rectangle rect = new Rectangle(Bounds.X + xpos + 8, Bounds.Y + 8, 16, 16);
 
-                spriteBatch.Draw(Logics.ToolTextures[i], rect, Color.White);
+                spriteBatch.Draw(tool.Texture, rect, Color.White);
 
                 xpos += 32;
             }
-
-
         }
 
         protected internal override void MouseKeyStateUpdate(MouseKeys key, EventType @event, Point pos)
         {
             if (key == MouseKeys.Left && @event == EventType.Presssed && CurrentlyHoveredId != -1)
             {
-
-                Logics.SelectedToolId = CurrentlyHoveredId;
-                Logics.SelectedTileId = null;
-                Logics.SelectedTilePreview = null;
-                Logics.SelectedWireColor = 255;
-
+                if (Logics.SelectedToolId != CurrentlyHoveredId) 
+                {
+                    if (Logics.SelectedToolId != -1) Logics.Tools[Logics.SelectedToolId].Deselected();
+                    Logics.SelectedToolId = CurrentlyHoveredId;
+                    Logics.SelectedTileId = null;
+                    Logics.SelectedTilePreview = null;
+                    Logics.SelectedWireColor = 255;
+                    Logics.PastePreview = null;
+                    if (CurrentlyHoveredId != -1) Logics.Tools[CurrentlyHoveredId].Selected();
+                }
             }
         }
 

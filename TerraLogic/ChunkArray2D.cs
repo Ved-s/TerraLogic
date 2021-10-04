@@ -12,8 +12,8 @@ namespace TerraLogic
 {
     public class ChunkArray2D
     {
-        static Regex ChunkRegex = new Regex("(\\d+),(\\d+):([^;]*);");
-        static Regex HeaderRegex = new Regex("^(\\d+);");
+        internal static Regex ChunkRegex = new Regex("(\\d+),(\\d+):([^;]*);");
+        internal static Regex HeaderRegex = new Regex("^(\\d+);");
 
         int[,][,] ChunkMap;
         int ChunkSize;
@@ -76,8 +76,6 @@ namespace TerraLogic
         public string ToDataString() 
         {
             StringBuilder builder = new StringBuilder();
-            byte[] chunk = new byte[ChunkSize * ChunkSize * 4];
-            byte[] compressedChunk;
 
             builder.Append(ChunkSize);
             builder.Append(';');
@@ -86,23 +84,43 @@ namespace TerraLogic
                 for (int x = 0; x < ChunkMap.GetLength(0); x++)
                     if (!ChunkMap[x, y].IsAllZerosOrNull())
                     {
-                        Buffer.BlockCopy(ChunkMap[x, y], 0, chunk, 0, chunk.Length);
-
-                        MemoryStream stream = new MemoryStream();
-                        DeflateStream deflate = new DeflateStream(stream, CompressionMode.Compress, true);
-                        deflate.Write(chunk, 0, chunk.Length);
-                        deflate.Close();
-                        compressedChunk = stream.ToArray();
-                        stream.Close();
-                        
                         builder.Append(x);
                         builder.Append(',');
                         builder.Append(y);
                         builder.Append(':');
-                        builder.Append(Convert.ToBase64String(compressedChunk));
+                        builder.Append(Convert.ToBase64String(DeflateUtils.Compress(ChunkMap[x,y], 4)));
                         builder.Append(';');
                     }
             return builder.ToString();
+        }
+
+        public string ToPartialDataString(Rectangle rect)
+        {
+            int[] bigChunk = new int[rect.Width * rect.Height];
+            for (int y = 0; y < rect.Height; y++)
+                for (int x = 0; x < rect.Width; x++) 
+                {
+                    bigChunk[y * rect.Width + x] = this[x + rect.X, y + rect.Y];
+                }
+            return $"{rect.Width},{rect.Height}:{Convert.ToBase64String(DeflateUtils.Compress(bigChunk, 4))};";
+        }
+        public bool LoadPartialDataString(string data, Point pos, bool merge)
+        {
+            Match chunk = ChunkRegex.Match(data);
+            Point size = new Point(int.Parse(chunk.Groups[1].Value), int.Parse(chunk.Groups[2].Value));
+
+            int[] chunkData = new int[size.X * size.Y];
+            DeflateUtils.Decompress(Convert.FromBase64String(chunk.Groups[3].Value), chunkData, 4);
+
+            for (int y = 0; y < size.Y; y++)
+                for (int x = 0; x < size.X; x++)
+                {
+                    if (merge) this[pos.X + x, pos.Y + y] |= chunkData[y * size.X + x];
+                    else this[pos.X + x, pos.Y + y] = chunkData[y * size.X + x];
+                }
+
+            return true;
+
         }
 
         public bool LoadDataString(string data) 
@@ -133,16 +151,8 @@ namespace TerraLogic
 
             foreach (KeyValuePair<Point, string> kvp in chunks) 
             {
-                MemoryStream compressedChunk = new MemoryStream(Convert.FromBase64String(kvp.Value));
-                MemoryStream chunk = new MemoryStream(ChunkSize * ChunkSize * 4);
-                DeflateStream deflate = new DeflateStream(compressedChunk, CompressionMode.Decompress);
-                deflate.CopyTo(chunk);
-                deflate.Close();
-                compressedChunk.Close();
-
                 ChunkMap[kvp.Key.X, kvp.Key.Y] = new int[ChunkSize, ChunkSize];
-
-                Buffer.BlockCopy(chunk.ToArray(), 0, ChunkMap[kvp.Key.X, kvp.Key.Y], 0, ChunkSize * ChunkSize * 4);
+                DeflateUtils.Decompress(Convert.FromBase64String(kvp.Value), ChunkMap[kvp.Key.X, kvp.Key.Y], 4);
             }
 
             return true;

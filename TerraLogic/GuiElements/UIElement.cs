@@ -12,6 +12,7 @@ namespace TerraLogic.GuiElements
     {
         public static Dictionary<string, UIElement> Elements = new Dictionary<string, UIElement>();
 
+        List<UIModal> VisibleModals = new List<UIModal>();
 
         public UIElement(string name)
         {
@@ -28,9 +29,15 @@ namespace TerraLogic.GuiElements
         public virtual void Draw(SpriteBatch spriteBatch)
         {
             if (!Visible) return;
+
             foreach (UIElement e in Sub.Reverse<UIElement>())
-                if (e.Visible) e.Draw(spriteBatch);
-            
+            {
+                if (e.Visible && e is not UIModal) e.Draw(spriteBatch);
+            }
+
+            foreach (UIModal modal in VisibleModals) Graphics.FillRectangle(spriteBatch, Bounds, modal.ModalBackground);
+            foreach (UIModal modal in VisibleModals) modal.Draw(spriteBatch);
+
         }
 
         internal void DrawDebug(SpriteBatch spriteBatch, Color c)
@@ -51,12 +58,13 @@ namespace TerraLogic.GuiElements
                 if (pos.Y + s.Y > Parent.Bounds.Bottom) pos.Y = Parent.Bounds.Bottom - s.Y;
             }
 
-            spriteBatch.DrawString(Font, data, pos + new Vector2(0, -1), Color.Black);
-            spriteBatch.DrawString(Font, data, pos + new Vector2(-1, 0), Color.Black);
-            spriteBatch.DrawString(Font, data, pos + new Vector2(0, 1), Color.Black);
-            spriteBatch.DrawString(Font, data, pos + new Vector2(1, 0), Color.Black);
+            spriteBatch.DrawStringShaded(Font, data, pos, c, Color.Black);
 
-            spriteBatch.DrawString(Font, data, pos, c);
+            foreach (UIModal modal in VisibleModals) 
+            {
+                Graphics.DrawRectangle(spriteBatch, modal.Bounds, Color.Yellow);
+                spriteBatch.DrawStringShadedCentered(modal.Font, "modal", new Rectangle(modal.Bounds.X, modal.Bounds.Y, modal.Bounds.Width, 1), Color.White, Color.Black);
+            }
 
         }
 
@@ -65,8 +73,10 @@ namespace TerraLogic.GuiElements
             OnUpdate?.Invoke(this);
             if (!Enabled || !Visible) return;
             if (PositionRecalculateRequired) Recalculate();
+            VisibleModals.Clear();
             foreach (UIElement e in Sub)
             {
+                if (e.Visible && e is UIModal modal) VisibleModals.Add(modal);
                 if (PositionRecalculateRequired) e.PositionRecalculateRequired = true;
                 if (!e.Enabled) continue;
                 if (!e.Visible && !e.InvisibleUpdate) continue;
@@ -121,6 +131,16 @@ namespace TerraLogic.GuiElements
 
         internal UIElement GetHover(Point pos)
         {
+            bool hasModal = false;
+            foreach (UIElement me in VisibleModals)
+
+                    if (me.Bounds.Contains(pos)) 
+                    {
+                        UIElement hover = me.GetHover(pos);
+                        if (hover != null) return hover;
+                    }
+            if (VisibleModals.Count > 0) return this;
+
             foreach (UIElement e in Sub)
             {
                 if (e.Bounds.Contains(pos) && e.Visible)
@@ -133,6 +153,7 @@ namespace TerraLogic.GuiElements
                     }
                 }
             }
+
             if (Bounds.Contains(pos) && !HoverTransparentBackground) return this;
             return null;
         }

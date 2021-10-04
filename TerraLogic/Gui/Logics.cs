@@ -22,14 +22,12 @@ namespace TerraLogic.Gui
         internal static Dictionary<string, Tile> TilePreviews = new Dictionary<string, Tile>();
         internal static ChunkArray2D WireUpdateArray = new ChunkArray2D(8);
 
-        internal static string[] Tools = new string[] { "remove" };
-        internal static Texture2D[] ToolTextures = new Texture2D[Tools.Length];
-        internal static Dictionary<string, string> ToolNames = new Dictionary<string, string> { { "remove", "Remove tile" } };
+        internal static List<Tools.Tool> Tools = new List<Tools.Tool>();
 
         public static Logics Instance;
+        public static Stopwatch WireUpdateWatch = new Stopwatch();
 
-
-        static Random Rnd = new Random();
+        static readonly Random Rnd = new Random();
 
         public Logics(string name) : base(name) { Instance = this; }
         static Logics()
@@ -37,13 +35,17 @@ namespace TerraLogic.Gui
             foreach (Type t in typeof(Logics).Assembly.GetTypes())
             {
                 if (t.IsAbstract) continue;
-                if (t.BaseType == typeof(Tile) || t.BaseType == typeof(LogicGate))
+                if (t.BaseType == typeof(Tile) || t.BaseType.BaseType == typeof(Tile))
                 {
                     Tile tile = Activator.CreateInstance(t) as Tile;
                     TileMap.Add(tile.Id, tile);
 
                     if (tile.PreviewVariants is null) TilePreviews.Add(tile.Id, tile.CreateTile(null, true));
                     else foreach (string previewId in tile.PreviewVariants) TilePreviews.Add(tile.Id + ":" + previewId, tile.CreateTile(previewId, true));
+                }
+                else if (t.BaseType == typeof(Tools.Tool))
+                {
+                    Tools.Add(Activator.CreateInstance(t) as Tools.Tool);
                 }
             }
         }
@@ -53,10 +55,10 @@ namespace TerraLogic.Gui
 
         internal static string SelectedTileId = null;
         internal static Tile SelectedTilePreview = null;
-
         internal static int SelectedToolId = -1;
-
         internal static byte SelectedWireColor = 0;
+        internal static PastePreview PastePreview = null;
+
         internal static List<Color> WireColorMapping = new List<Color>()
         {
             Color.Red,
@@ -69,7 +71,7 @@ namespace TerraLogic.Gui
 
         private int WheelZoom = 0;
 
-        public static Vector2 TileVec = new Vector2(16, 16);
+        public static Point TileSize = new Point(16, 16);
 
         static Stack<WireSignal> WiresToSignal = new Stack<WireSignal>();
 
@@ -80,96 +82,12 @@ namespace TerraLogic.Gui
             WireTL = content.Load<Texture2D>("Wires/WireJunctionTL");
             WireTR = content.Load<Texture2D>("Wires/WireJunctionTR");
 
-            for (int i = 0; i < Tools.Length; i++) 
+            foreach (Tools.Tool t in Tools)
             {
-                ToolTextures[i] = content.Load<Texture2D>($"Tools/{Tools[i]}");
+                t.Texture = content.Load<Texture2D>($"Tools/{t.Id}");
             }
 
             foreach (Tile t in TileMap.Values) t.LoadContent(content);
-        }
-        public override void Draw(SpriteBatch spriteBatch)
-        {
-            TerraLogic.SpriteBatch.End();
-            DrawGrid();
-            DrawTiles();
-            if (SelectedWireColor < WireColorMapping.Count || SelectedTileId != null) DrawWires();
-            DrawTilePreview();
-            TerraLogic.SpriteBatch.Begin();
-        }
-        public override void Update()
-        {
-            base.Update();
-            for (int y = 0; y < TileArray.Height; y++)
-                for (int x = 0; x < TileArray.Width; x++)
-                {
-                    Tile t = TileArray[x, y];
-                    if (t is null || (!t.NeedsUpdate && !t.NeedsContinuousUpdate) || t.Pos.X != x || t.Pos.Y != y) continue;
-                    t.Update();
-                    if (!t.NeedsContinuousUpdate) t.NeedsUpdate = false;
-                }
-        }
-
-        private void DrawTilePreview()
-        {
-            if (!Hover) return;
-
-            if (SelectedTilePreview is null && SelectedToolId == -1) return;
-
-            Point wp = (PanNZoom.ScreenToWorld(MousePosition) / TileVec).ToPoint();
-            if (SelectedTilePreview != null && !CanSetTile(wp.X, wp.Y, SelectedTilePreview)) return;
-
-
-            TerraLogic.SpriteBatch.Begin(SpriteSortMode.Deferred, null, PanNZoom.Zoom > 1 ? SamplerState.PointWrap : SamplerState.LinearWrap, null, null);
-            if (SelectedToolId != -1)
-                    TerraLogic.SpriteBatch.Draw(ToolTextures[SelectedToolId], PanNZoom.WorldToScreen(new Rectangle(wp.X * 16, wp.Y * 16, 16, 16)), Color.White);
-
-            else if (SelectedTilePreview != null)
-                SelectedTilePreview.Draw(new Rectangle(wp.X * 16, wp.Y * 16, SelectedTilePreview.Size.X * 16, SelectedTilePreview.Size.Y * 16));
-            TerraLogic.SpriteBatch.End();
-
-        }
-
-        protected internal override void MouseKeyStateUpdate(MouseKeys key, EventType @event, Point pos)
-        {
-            Point worldpos = (PanNZoom.ScreenToWorld(pos) / TileVec).ToPoint();
-            if (@event == EventType.Hold)
-            {
-                if (key == MouseKeys.Left)
-                {
-                    if (SelectedTileId != null)
-                        SetTile(worldpos, SelectedTileId);
-                    else if (SelectedWireColor < WireColorMapping.Count)
-                        SetWire(worldpos.X, worldpos.Y, SelectedWireColor, true);
-                    else if (SelectedToolId > -1) switch (Tools[SelectedToolId]) 
-                        {
-                            case "remove": SetTile(worldpos, null); break;
-                        }
-
-                }
-                if (key == MouseKeys.Right)
-                {
-                    if (SelectedWireColor < WireColorMapping.Count)
-                        SetWire(worldpos.X, worldpos.Y, SelectedWireColor, false);
-                    SelectedTileId = null;
-                    SelectedTilePreview = null;
-                    SelectedToolId = -1;
-                }
-            }
-
-            if (@event == EventType.Presssed || @event == EventType.Hold)
-            {
-
-                if (key == MouseKeys.Right && SelectedWireColor >= WireColorMapping.Count)
-                {
-                    Tile t = TileArray[worldpos.X, worldpos.Y];
-                    if (t != null)
-                    {
-                        t.RightClick(@event == EventType.Hold);
-                    }
-                }
-            }
-
-            if (key == MouseKeys.Middle) PanNZoom.UpdateDragging(@event == EventType.Hold, pos);
         }
 
         internal static void SaveToFile(string filename)
@@ -207,9 +125,10 @@ namespace TerraLogic.Gui
                 file.Write(string.Join(",", WireColorMapping.Select(c => c.PackedValue.ToString())));
             }
         }
-
         internal static void LoadFromFile(string file)
         {
+            if (!File.Exists(file)) return;
+
             string[] lines = File.ReadAllLines(file);
 
             if (lines.Length < 1) return;
@@ -227,6 +146,181 @@ namespace TerraLogic.Gui
             foreach (string c in lines[2].Split(',')) WireColorMapping.Add(new Color() { PackedValue = uint.Parse(c) });
         }
 
+        internal static void CopyToClipboard(Rectangle selection)
+        {
+            StringBuilder tileBuilder = new StringBuilder();
+            for (int y = selection.Y; y < selection.Bottom; y++)
+                for (int x = selection.X; x < selection.Right; x++)
+                {
+                    Tile t = TileArray[x, y];
+                    if (t is null) continue;
+                    if (x != t.Pos.X || y != t.Pos.Y) continue;
+
+                    tileBuilder.Append(x - selection.X);
+                    tileBuilder.Append(',');
+                    tileBuilder.Append(y - selection.Y);
+                    tileBuilder.Append(':');
+                    string data = t.GetData();
+                    if (data != null)
+                        tileBuilder.Append(t.Id + ":" + data);
+                    else
+                        tileBuilder.Append(t.Id);
+
+                    tileBuilder.Append(';');
+                }
+
+            ClipboardUtils.Text = WireArray.ToPartialDataString(selection) + tileBuilder.ToString();
+        }
+        internal static void LoadFromClipboard() 
+        {
+            string[] data = ClipboardUtils.Text.Split(new char[] { ';' }, 2);
+            if (data.Length != 2) return;
+
+            data[0] = data[0] + ';';
+
+            Match header = ChunkArray2D.ChunkRegex.Match(data[0]);
+            if (!header.Success) return;
+
+            Point size = new Point(int.Parse(header.Groups[1].Value), int.Parse(header.Groups[2].Value));
+            Tile[,] tiles = new Tile[size.X, size.Y];
+            foreach (Match tile in ChunkRegex.Matches(data[1]))
+            {
+                int x = int.Parse(tile.Groups[1].Value);
+                int y = int.Parse(tile.Groups[2].Value);
+                string[] tileData = tile.Groups[3].Value.Split(new char[] { ':' }, 2);
+
+                if (TileMap.TryGetValue(tileData[0], out Tile newTile))
+                {
+                    tiles[x,y] = newTile.CreateTile(tileData.Length == 1 ? null : tileData[1], false);
+                }
+            }
+
+            if (SelectedToolId != -1) Tools[SelectedToolId].Deselected();
+            SelectedToolId = -1;
+            SelectedTileId = null;
+            SelectedTilePreview = null;
+            SelectedWireColor = 255;
+            global::TerraLogic.Tools.Select.Instance.Selection = new Rectangle();
+            PastePreview = new PastePreview() { WireData = data[0], Size = size, Tiles = tiles };
+        }
+
+        public override void Draw(SpriteBatch spriteBatch)
+        {
+            TerraLogic.SpriteBatch.End();
+            DrawGrid();
+            DrawTiles();
+            if (SelectedWireColor < WireColorMapping.Count
+                || SelectedTileId != null
+                || (SelectedToolId > -1 && Tools[SelectedToolId].ShowWires)) DrawWires();
+            DrawTilePreview();
+
+            for (int i = 0; i < Tools.Count; i++) Tools[i].Draw(spriteBatch, SelectedToolId == i);
+
+            TerraLogic.SpriteBatch.Begin();
+        }
+        public override void Update()
+        {
+            WireUpdateWatch.Reset();
+            base.Update();
+
+            if (SelectedToolId > -1) Tools[SelectedToolId].Update();
+
+            for (int y = 0; y < TileArray.Height; y++)
+                for (int x = 0; x < TileArray.Width; x++)
+                {
+                    Tile t = TileArray[x, y];
+                    if (t is null || (!t.NeedsUpdate && !t.NeedsContinuousUpdate) || t.Pos.X != x || t.Pos.Y != y) continue;
+                    t.Update();
+                    if (!t.NeedsContinuousUpdate) t.NeedsUpdate = false;
+                }
+        }
+
+        protected internal override void MouseKeyStateUpdate(MouseKeys key, EventType @event, Point pos)
+        {
+            Point worldpos = (PanNZoom.ScreenToWorld(pos) / TileSize.ToVector2()).ToPoint();
+
+            if (SelectedToolId > -1) Tools[SelectedToolId].MouseKeyUpdate(key, @event, worldpos);
+
+            if (key == MouseKeys.Left)
+            {
+                if (@event == EventType.Hold)
+                {
+                    if (SelectedTileId != null)
+                    {
+                        string data = SelectedTilePreview.GetData();
+                        SetTile(worldpos, SelectedTilePreview.Id + (data is null ? "" : ":" + data));
+                    }
+                    else if (SelectedWireColor < WireColorMapping.Count)
+                        SetWire(worldpos.X, worldpos.Y, SelectedWireColor, true);
+                }
+                if (@event == EventType.Presssed) 
+                {
+                    Rectangle selection = global::TerraLogic.Tools.Select.Instance.Selection;
+                    if (selection.Contains(worldpos)) 
+                    {
+                        if (SelectedTileId != null)
+                        {
+                            string data = SelectedTilePreview.GetData();
+                            data = SelectedTilePreview.Id + (data is null ? "" : ":" + data);
+
+                            for (int y = selection.Y; y < selection.Bottom; y++)
+                                for (int x = selection.X; x < selection.Right; x++)
+                                    SetTile(x, y, data);
+                        }
+                        else if (SelectedWireColor < WireColorMapping.Count) 
+                        {
+                            for (int y = selection.Y; y < selection.Bottom; y++)
+                                for (int x = selection.X; x < selection.Right; x++)
+                                    SetWire(x, y, SelectedWireColor, true);
+                        }
+                    }
+
+                    if (PastePreview is not null) 
+                    {
+                        WireArray.LoadPartialDataString(PastePreview.WireData, worldpos, true);
+                        for (int y = 0; y < PastePreview.Size.Y; y++)
+                            for (int x = 0; x < PastePreview.Size.X; x++)
+                                if (PastePreview.Tiles[x, y] is not null)
+                                {
+                                    string data = PastePreview.Tiles[x, y].GetData();
+                                    SetTile(worldpos.X + x, worldpos.Y + y, PastePreview.Tiles[x, y].Id + (data is null? "" : ":" + data));
+                                }
+
+                    }
+                }
+            }
+            if (key == MouseKeys.Right)
+            {
+                if (@event == EventType.Presssed)
+                {
+                    if (SelectedToolId != -1) Tools[SelectedToolId].Deselected();
+                    SelectedTileId = null;
+                    SelectedTilePreview = null;
+                    SelectedToolId = -1;
+                    PastePreview = null;
+                }
+                if (@event == EventType.Presssed || @event == EventType.Hold)
+                {
+
+                    if (SelectedWireColor >= WireColorMapping.Count)
+                    {
+                        Tile t = TileArray[worldpos.X, worldpos.Y];
+                        if (t != null)
+                        {
+                            t.RightClick(@event == EventType.Hold, false);
+                        }
+                    }
+                }
+                if (@event == EventType.Hold)
+                {
+
+                    if (SelectedWireColor < WireColorMapping.Count)
+                        SetWire(worldpos.X, worldpos.Y, SelectedWireColor, false);
+
+                }
+            }
+            if (key == MouseKeys.Middle) PanNZoom.UpdateDragging(@event == EventType.Hold, pos);
+        }
         protected internal override void KeyStateUpdate(Keys key, EventType @event)
         {
             if (Hover)
@@ -244,8 +338,15 @@ namespace TerraLogic.Gui
                         case Keys.D7: SelectedWireColor = 6; break;
                         case Keys.D8: SelectedWireColor = 7; break;
                         case Keys.D9: SelectedWireColor = 8; break;
-                        case Keys.Escape: SelectedTileId = null; SelectedWireColor = 255; SelectedTilePreview = null; break;
+                        case Keys.Escape: 
+                            SelectedTileId = null; 
+                            SelectedWireColor = 255;
+                            SelectedTilePreview = null;
+                            PastePreview = null;
+                            global::TerraLogic.Tools.Select.Instance.Selection = new Rectangle();
+                            break;
                     }
+                    if (key == Keys.V && Root.CurrentKeys.IsKeyDown(Keys.LeftControl)) LoadFromClipboard();
                 }
 
                 if (@event == EventType.Hold)
@@ -256,6 +357,8 @@ namespace TerraLogic.Gui
                     if (key == Keys.T) SetTile(worldpos, "test");
 
                 }
+
+                if (SelectedToolId > -1) Tools[SelectedToolId].KeyUpdate(key, @event, Root.CurrentKeys);
             }
         }
         protected internal override void MouseWheelStateUpdate(int change, Point pos)
@@ -268,12 +371,41 @@ namespace TerraLogic.Gui
             PanNZoom.SetZoom(zoom, pos);
         }
 
+        private void DrawTilePreview()
+        {
+            if (!Hover) return;
+            if (SelectedTilePreview is null && SelectedToolId == -1 && PastePreview is null) return;
+
+            Point wp = (PanNZoom.ScreenToWorld(MousePosition) / TileSize.ToVector2()).ToPoint();
+
+            TerraLogic.SpriteBatch.Begin(SpriteSortMode.Deferred, null, PanNZoom.Zoom > 1 ? SamplerState.PointWrap : SamplerState.LinearWrap, null, null);
+
+            if (PastePreview is not null)
+            {
+                Rectangle rect = PanNZoom.WorldToScreen(new Rectangle(wp.X, wp.Y, PastePreview.Size.X, PastePreview.Size.Y).Mul(TileSize));
+                Graphics.FillRectangle(TerraLogic.SpriteBatch, rect, Color.CornflowerBlue.Div(5, true));
+
+                for (int y = 0; y < PastePreview.Size.Y; y++)
+                    for (int x = 0; x < PastePreview.Size.X; x++)
+                        if (PastePreview.Tiles[x, y] is not null)
+                        {
+                            PastePreview.Tiles[x, y].Draw(new Rectangle(wp.X + x, wp.Y + y, PastePreview.Tiles[x, y].Size.X, PastePreview.Tiles[x, y].Size.Y).Mul(TileSize));
+                        }
+            }
+
+            else if (SelectedToolId != -1)
+                TerraLogic.SpriteBatch.Draw(Tools[SelectedToolId].Texture, PanNZoom.WorldToScreen(new Rectangle(wp.X * 16, wp.Y * 16, 16, 16)), Color.White);
+
+            else if (SelectedTilePreview != null && CanSetTile(wp.X, wp.Y, SelectedTilePreview))
+                SelectedTilePreview.Draw(new Rectangle(wp.X, wp.Y, SelectedTilePreview.Size.X, SelectedTilePreview.Size.Y).Mul(TileSize));
+            TerraLogic.SpriteBatch.End();
+        }
         private void DrawWires()
         {
             TerraLogic.SpriteBatch.Begin(SpriteSortMode.Deferred, BlendState.Additive, PanNZoom.Zoom > 1 ? SamplerState.PointWrap : SamplerState.LinearWrap, null, null);
 
 
-            Vector2 end = (PanNZoom.ScreenToWorld(new Point(Bounds.Right, Bounds.Bottom).Add(new Point(16, 16))) / TileVec);
+            Vector2 end = (PanNZoom.ScreenToWorld(new Point(Bounds.Right, Bounds.Bottom).Add(new Point(16, 16))) / TileSize.ToVector2());
 
             for (int y = (int)(PanNZoom.Position.Y / 16); y < Math.Min(WireArray.Height, (int)end.Y); y++)
                 for (int x = (int)(PanNZoom.Position.X / 16); x < Math.Min(WireArray.Width, (int)end.X); x++)
@@ -297,7 +429,7 @@ namespace TerraLogic.Gui
                     int wireBottom = WireArray[x, y + 1];
                     int wireRight = WireArray[x + 1, y];
 
-                    RectangleF rect = new RectangleF(x * TileVec.X, y * TileVec.Y, TileVec.X, TileVec.Y);
+                    RectangleF rect = new RectangleF(x * TileSize.X, y * TileSize.Y, TileSize.X, TileSize.Y);
 
                     bool blackDrawn = false;
 
@@ -371,7 +503,6 @@ namespace TerraLogic.Gui
                 }
             TerraLogic.SpriteBatch.End();
         }
-
         private void DrawTiles()
         {
             TerraLogic.SpriteBatch.Begin(SpriteSortMode.Deferred, null, PanNZoom.Zoom > 1 ? SamplerState.PointWrap : SamplerState.LinearWrap, null, null);
@@ -416,12 +547,12 @@ namespace TerraLogic.Gui
         {
             Vector2 pos = Vector2.Zero;
 
-            if (top) pos.X += TileVec.X;
-            if (right) pos.X += TileVec.X * 2;
-            if (bottom) pos.Y += TileVec.Y;
-            if (left) pos.Y += TileVec.Y * 2;
+            if (top) pos.X += TileSize.X;
+            if (right) pos.X += TileSize.X * 2;
+            if (bottom) pos.Y += TileSize.Y;
+            if (left) pos.Y += TileSize.Y * 2;
 
-            return new Rectangle((int)pos.X, (int)pos.Y, (int)TileVec.X, (int)TileVec.Y);
+            return new Rectangle((int)pos.X, (int)pos.Y, (int)TileSize.X, (int)TileSize.Y);
         }
 
         public static void SendWireSignal(Point pos, int wire)
@@ -430,6 +561,8 @@ namespace TerraLogic.Gui
         }
         public static void SendWireSignal(Rectangle rect, int wire)
         {
+            WireUpdateWatch.Start();
+
             int updateId = Rnd.Next();
 
             HashSet<LogicGate> gatesToUpdate = new HashSet<LogicGate>();
@@ -452,7 +585,7 @@ namespace TerraLogic.Gui
                     if (t != null)
                     {
                         t.WireSignal(w.Wire, w.Origin);
-                        if (t is LogicLamp) 
+                        if (t is LogicLamp)
                         {
                             int scanpos = w.Y;
                             while (TileArray[w.X, scanpos] is LogicLamp) scanpos++;
@@ -521,6 +654,7 @@ namespace TerraLogic.Gui
             }
             foreach (LogicGate lg in gatesToUpdate) lg.UpdateState();
 
+            WireUpdateWatch.Stop();
 
         }
 
@@ -613,5 +747,14 @@ namespace TerraLogic.Gui
 
         public bool IsAtOrigin { get => X == Origin.X && Y == Origin.Y; }
     }
+
+    class PastePreview 
+    {
+        internal string WireData;
+        internal Point Size;
+        internal Tile[,] Tiles;
+    }
+
+
 
 }

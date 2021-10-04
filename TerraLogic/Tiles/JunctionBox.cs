@@ -31,7 +31,7 @@ namespace TerraLogic.Tiles
                 Type == JunctionType.TR ? SpriteEffects.FlipHorizontally : SpriteEffects.None, 0);
         }
 
-        public override void RightClick(bool held)
+        public override void RightClick(bool held, bool preview)
         {
             if (held) return;
             Type++;

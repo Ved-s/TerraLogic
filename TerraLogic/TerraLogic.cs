@@ -25,7 +25,7 @@ namespace TerraLogic
         float TickTimeMS = 0f;
         DateTime TmpTime = DateTime.Now;
 
-        static UIRoot Root;
+        internal static UIRoot Root;
 
         public TerraLogic()
         {
@@ -71,7 +71,7 @@ namespace TerraLogic
                                     e.Text =
                                         $"{Instance.DrawTimeMS:0.000} ms frame\n" +
                                         $"{Instance.TickTimeMS:0.000} ms tick\n" +
-                                        //$"{(Instance.DrawTimeMS == 0? 0 : 1000/ Instance.DrawTimeMS):0} fps max\n" +
+                                        $"{Gui.Logics.WireUpdateWatch.Elapsed.TotalMilliseconds:0.000} ms wire\n" +
                                         $"{Util.MakeSize((ulong)Process.GetCurrentProcess().PrivateMemorySize64)} priv";
                                 }
                             },
@@ -140,7 +140,6 @@ namespace TerraLogic
                             },
                         }
                     }
-                    
                 },
                 OnKeyUpdated = (caller, key, @event) => 
                 {
@@ -151,7 +150,15 @@ namespace TerraLogic
                     }
                 }
             };
+
+            Gui.Logics.LoadFromFile("latest.tl");
         }
+
+        protected override void OnExiting(object sender, EventArgs args)
+        {
+            Gui.Logics.SaveToFile("latest.tl");
+        }
+
         protected override void LoadContent()
         {
             SpriteBatch = new SpriteBatch(GraphicsDevice);

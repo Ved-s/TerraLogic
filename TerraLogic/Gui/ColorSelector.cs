@@ -2,15 +2,14 @@
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using TerraLogic.GuiElements;
 
 namespace TerraLogic.Gui
 {
-    class ColorSelector : UIElement
+    class ColorSelector : UIModal
     {
+        public override Pos X => Pos.Width("..", .5f);
+        public override Pos Y => Pos.Height("..", .5f);
         public override Pos Width => 200;
         public override Pos Height => 100;
 
@@ -21,6 +20,8 @@ namespace TerraLogic.Gui
         ColorChosenDelegate Callback;
         Action<Color> ChangeCallback;
         Color? InitColor;
+        Texture2D DrawSprite;
+        Rectangle? SpriteRect;
 
         public Color CurrentColor 
         {
@@ -38,7 +39,7 @@ namespace TerraLogic.Gui
         {
             Instance = this;
 
-            BackColor = new Color(16, 16, 16, 128);
+            BackColor = new Color(32, 32, 32, 128);
             Visible = false;
 
             Sub = new ElementCollection(this)
@@ -100,7 +101,7 @@ namespace TerraLogic.Gui
             Blue = GetElement(".blue") as GradientColorBar; 
         }
 
-        public void ShowDialog(Color? init, ColorChosenDelegate callback, Action<Color> colorChanging = null)
+        public void ShowDialog(Color? init, ColorChosenDelegate callback, Action<Color> colorChanging = null, Texture2D previewSprite = null, Rectangle? previewSpriteRect = null)
         {
             Visible = true;
             Callback?.Invoke(true, CurrentColor);
@@ -108,6 +109,9 @@ namespace TerraLogic.Gui
             ChangeCallback = colorChanging;
             if (init != null) CurrentColor = (Color)init;
             InitColor = init;
+
+            DrawSprite = previewSprite ?? TerraLogic.Pixel;
+            SpriteRect = previewSpriteRect;
         }
 
         public override void Update()
@@ -154,7 +158,13 @@ namespace TerraLogic.Gui
             Rectangle rect = new Rectangle(Bounds.X + 135, Bounds.Y + 10, 56, 56);
 
             Color c = CurrentColor;
-            Graphics.FillRectangle(spriteBatch, rect, c);
+
+            spriteBatch.End();
+            spriteBatch.Begin(SpriteSortMode.Deferred, null, SamplerState.PointWrap, null, null);
+            spriteBatch.Draw(DrawSprite, rect, SpriteRect, c);
+            spriteBatch.End();
+            spriteBatch.Begin();
+
             Graphics.DrawRectangle(spriteBatch, rect, Color.White);
 
             string str = $"{c.R} ({c.R:x2})";

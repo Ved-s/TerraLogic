@@ -64,6 +64,7 @@ namespace TerraLogic.GuiElements
 
         protected internal override void KeyStateUpdate(Keys key, EventType @event)
         {
+            if (!Hover) return;
 
             bool hold = false;
             if (@event == EventType.Hold)

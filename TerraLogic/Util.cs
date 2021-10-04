@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Input;
+﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -137,6 +138,13 @@ namespace TerraLogic
             if (value < minIncl) value = minIncl;
             else if (value > maxIncl) value = maxIncl;
             return value;
+        }
+
+        public static Rectangle RectFrom2Points(Point a, Point b) 
+        {
+            Point min = new Point(Math.Min(a.X, b.X), Math.Min(a.Y, b.Y));
+            Point max = new Point(Math.Max(a.X, b.X), Math.Max(a.Y, b.Y));
+            return new Rectangle(min.X, min.Y, max.X - min.X, max.Y - min.Y);
         }
     }
 }

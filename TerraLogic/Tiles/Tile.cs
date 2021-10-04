@@ -28,10 +28,12 @@ namespace TerraLogic.Tiles
         public virtual void WireSignal(int wire, Point origin) { }
         public virtual void BeforeDestroy() { }
         public virtual void PlacedInWorld() { }
-        public virtual void RightClick(bool held) { }
+
+        public virtual void RightClick(bool held, bool preview) { }
 
         protected void SendSignal(int wire = -1) 
         {
+            if (!Created) return;
             Gui.Logics.SendWireSignal(new Rectangle(Pos.X, Pos.Y, Size.X, Size.Y), wire);
         }
 

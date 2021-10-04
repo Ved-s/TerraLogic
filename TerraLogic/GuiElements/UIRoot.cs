@@ -21,7 +21,7 @@ namespace TerraLogic.GuiElements
 
         public new Point MousePosition;
 
-        public UIElement Hover;
+        public new UIElement Hover;
 
         public UIRoot() : base("root")
         {
@@ -80,7 +80,7 @@ namespace TerraLogic.GuiElements
             OldMouseWheel = MouseWheel;
 
             PositionRecalculateRequired = false;
-            if (!anyMouseKey) Hover = GetHover(MousePosition);
+            if (!anyMouseKey) Hover = TerraLogic.Instance.IsActive? GetHover(MousePosition) : null;
         }
         public override void Draw(SpriteBatch spriteBatch)
         {

@@ -31,7 +31,7 @@ namespace TerraLogic.Gui
                 Color c = Logics.WireColorMapping[i];
 
                 hover = new Rectangle(0, ypos - 3, 18, 18);
-                if (hover.Contains(MousePosition))
+                if (Hover && hover.Contains(MousePosition))
                 {
                     Graphics.FillRectangle(spriteBatch, hover.WithOffset(Bounds.Location), new Color(64, 64, 64));
                     HoverText = c.PackedValue.ToString("x8").Substring(2) + (Locked? "" : "\nPress DEL to remove\nRight-Click to edit");
@@ -80,9 +80,6 @@ namespace TerraLogic.Gui
                 if (newColor >= Logics.WireColorMapping.Count)
                 {
                     if (Logics.WireColorMapping.Count >= 32) return;
-                    ColorSelector.Instance.X = Pos.Right(Name);
-                    ColorSelector.Instance.Y = Logics.WireColorMapping.Count < 6? Pos.Y(Name) : Pos.Bottom(Name) - Pos.Height();
-
                     Locked = true;
                     PositionRecalculateRequired = true;
 
@@ -92,14 +89,17 @@ namespace TerraLogic.Gui
                             Logics.WireColorMapping.Add((Color)color);
                         Locked = false;
                         PositionRecalculateRequired = true;
-                    });
+                    }, null, Logics.Wire, Logics.CalculateWireSpriteOffset(true,true,true,true));
                 }
                 else
                 {
+                    if (Logics.SelectedToolId != -1) Logics.Tools[Logics.SelectedToolId].Deselected();
+
                     Logics.SelectedWireColor = newColor;
                     Logics.SelectedTileId = null;
                     Logics.SelectedTilePreview = null;
                     Logics.SelectedToolId = -1;
+                    Logics.PastePreview = null;
                 }
             }
 
@@ -109,8 +109,6 @@ namespace TerraLogic.Gui
 
                 if (id < Logics.WireColorMapping.Count)
                 {
-                    ColorSelector.Instance.X = Pos.Right(Name);
-                    ColorSelector.Instance.Y = Logics.WireColorMapping.Count < 6 ? Pos.Y(Name) : Pos.Bottom(Name) - Pos.Height();
 
                     Locked = true;
                     PositionRecalculateRequired = true;
@@ -122,7 +120,7 @@ namespace TerraLogic.Gui
                         PositionRecalculateRequired = true;
 
                     },
-                    (c) => Logics.WireColorMapping[id] = c);
+                    (c) => Logics.WireColorMapping[id] = c, Logics.Wire, Logics.CalculateWireSpriteOffset(true, true, true, true));
                 }
             }
         }

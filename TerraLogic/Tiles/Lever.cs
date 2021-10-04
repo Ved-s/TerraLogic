@@ -8,7 +8,7 @@ using System.Text;
 
 namespace TerraLogic.Tiles
 {
-    class BigSwitch : Tile
+    class Lever : Tile
     {
         public override string Id => "lever";
         public override Point Size => new Point(2,2);
@@ -25,10 +25,10 @@ namespace TerraLogic.Tiles
 
         internal override Tile CreateTile(string data, bool preview)
         {
-            return new BigSwitch() { state = data == "+" };
+            return new Lever() { state = data == "+" };
         }
 
-        public override void RightClick(bool held)
+        public override void RightClick(bool held, bool preview)
         {
             if (held) return;
             state = !state;

@@ -13,10 +13,14 @@ namespace TerraLogic.Tiles
         internal bool State;
         internal bool IsFaulty;
 
+        bool Triggered = false;
+
         protected abstract string GateId { get; }
 
         public override string Id => "gate" + GateId;
         public override string DisplayName => $"Logic Gate ({GateId.ToUpper()})";
+
+        public override bool NeedsContinuousUpdate => true;
 
         static Dictionary<string, Texture2D[]> Textures = new Dictionary<string, Texture2D[]>(); // On Off Faulty
 
@@ -28,17 +32,21 @@ namespace TerraLogic.Tiles
             //if (hasFaulty) Debug.WriteLine($"FaultyTrigger: {faultyTriggered}");
             //else Debug.WriteLine($"CurrentState: {State}");
 
+            if (Triggered) Debug.WriteLine($"[{this}] Overload!");
+
             IsFaulty = hasFaulty;
             if (IsFaulty && faultyTriggered)
             {
-                if (lamps.Length > 0 && lamps[new Random().Next(0, lamps.Length)]) SendSignal();
+                if (lamps.Length > 0 && lamps[new Random().Next(0, lamps.Length)] && !Triggered) SendSignal();
             }
             else if (!IsFaulty)
             {
                 bool newstate = Compute(lamps);
-                if (newstate != State) SendSignal();
+                if (newstate != State && !Triggered) SendSignal();
                 State = newstate;
             }
+
+            Triggered = true;
         }
 
         public override void Draw(Rectangle rect, bool isScreenPos = false)
@@ -50,7 +58,7 @@ namespace TerraLogic.Tiles
 
         public override void Update()
         {
-            UpdateState();
+            Triggered = false;
         }
 
         public override void LoadContent(ContentManager content)
