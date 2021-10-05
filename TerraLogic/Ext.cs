@@ -44,6 +44,11 @@ namespace TerraLogic
             spriteBatch.DrawString(font, text, pos, textColor);
         }
 
+        public static void DrawTileSprite(this SpriteBatch spriteBatch, Texture2D sprite, int spriteX, int spriteY, Rectangle destinationRectangle, Color color, int tileWidth = 1, int tileHeight = 1)
+        {
+            spriteBatch.Draw(sprite, destinationRectangle, new Rectangle(spriteX * tileWidth * Gui.Logics.TileSize.X, spriteY * tileHeight * Gui.Logics.TileSize.Y, tileWidth * Gui.Logics.TileSize.X, tileHeight * Gui.Logics.TileSize.Y), color);
+        }
+
         public static void DrawStringShadedCentered(this SpriteBatch spriteBatch, SpriteFont font, string text, Rectangle rect, Color textColor, Color shadowColor)
         {
             Point size = font.MeasureString(text).ToPoint();

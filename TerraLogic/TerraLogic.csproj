@@ -93,6 +93,7 @@
     <Compile Include="Gui\Logics.cs" />
     <Compile Include="Gui\TileSelector.cs" />
     <Compile Include="Gui\WireColorSelector.cs" />
+    <Compile Include="PackedSprite.cs" />
     <Compile Include="PanNZoom.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Program.cs" />

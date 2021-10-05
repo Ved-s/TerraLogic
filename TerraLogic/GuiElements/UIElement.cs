@@ -131,7 +131,6 @@ namespace TerraLogic.GuiElements
 
         internal UIElement GetHover(Point pos)
         {
-            bool hasModal = false;
             foreach (UIElement me in VisibleModals)
 
                     if (me.Bounds.Contains(pos)) 

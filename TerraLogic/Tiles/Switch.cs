@@ -15,11 +15,11 @@ namespace TerraLogic.Tiles
 
         bool State = false;
 
-        static Texture2D Up, Down;
+        static Texture2D Sprite;
 
         public override void Draw(Rectangle rect, bool isScreenPos = false)
         {
-            TerraLogic.SpriteBatch.Draw(State?Down:Up, isScreenPos? rect: PanNZoom.WorldToScreen(rect), Color.White);
+            TerraLogic.SpriteBatch.DrawTileSprite(Sprite, State?1:0, 0, isScreenPos? rect: PanNZoom.WorldToScreen(rect), Color.White);
         }
 
         internal override Tile CreateTile(string data, bool preview)
@@ -41,8 +41,7 @@ namespace TerraLogic.Tiles
 
         public override void LoadContent(ContentManager content)
         {
-            Up = content.Load<Texture2D>("Tiles/SwitchUp");
-            Down = content.Load<Texture2D>("Tiles/SwitchDown");
+            Sprite = content.Load<Texture2D>("Tiles/Switch");
         }
     }
 }

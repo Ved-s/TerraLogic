@@ -13,16 +13,15 @@ namespace TerraLogic.Tiles
         internal bool State;
         internal bool IsFaulty;
 
-        bool Triggered = false;
+        protected abstract int GateId { get; }
+        protected abstract string GateName { get; }
 
-        protected abstract string GateId { get; }
-
-        public override string Id => "gate" + GateId;
-        public override string DisplayName => $"Logic Gate ({GateId.ToUpper()})";
+        public override string Id => "gate" + GateName;
+        public override string DisplayName => $"Logic Gate ({GateName.ToUpper()})";
 
         public override bool NeedsContinuousUpdate => true;
 
-        static Dictionary<string, Texture2D[]> Textures = new Dictionary<string, Texture2D[]>(); // On Off Faulty
+        static Texture2D Sprite; // Of On Faulty
 
         protected abstract bool Compute(bool[] lamps);
 
@@ -32,43 +31,32 @@ namespace TerraLogic.Tiles
             //if (hasFaulty) Debug.WriteLine($"FaultyTrigger: {faultyTriggered}");
             //else Debug.WriteLine($"CurrentState: {State}");
 
-            if (Triggered) Debug.WriteLine($"[{this}] Overload!");
-
             IsFaulty = hasFaulty;
             if (IsFaulty && faultyTriggered)
             {
-                if (lamps.Length > 0 && lamps[new Random().Next(0, lamps.Length)] && !Triggered) SendSignal();
+                if (lamps.Length > 0 && lamps[new Random().Next(0, lamps.Length)]) SendSignal();
             }
             else if (!IsFaulty)
             {
                 bool newstate = Compute(lamps);
-                if (newstate != State && !Triggered) SendSignal();
+                if (newstate != State) SendSignal();
                 State = newstate;
             }
-
-            Triggered = true;
         }
 
         public override void Draw(Rectangle rect, bool isScreenPos = false)
         {
-            Texture2D[] texes = Textures[GateId];
-            if (IsFaulty) TerraLogic.SpriteBatch.Draw(texes[2], isScreenPos ? rect : PanNZoom.WorldToScreen(rect), Color.White);
-            else TerraLogic.SpriteBatch.Draw(State ? texes[0] : texes[1], isScreenPos ? rect : PanNZoom.WorldToScreen(rect), Color.White);
+            if (IsFaulty) TerraLogic.SpriteBatch.DrawTileSprite(Sprite, 2, GateId, isScreenPos ? rect : PanNZoom.WorldToScreen(rect), Color.White);
+            else TerraLogic.SpriteBatch.DrawTileSprite(Sprite, State? 1 : 0, GateId, isScreenPos ? rect : PanNZoom.WorldToScreen(rect), Color.White);
         }
 
         public override void Update()
         {
-            Triggered = false;
         }
 
         public override void LoadContent(ContentManager content)
         {
-            Textures.Add(GateId, new Texture2D[]
-            {
-                content.Load<Texture2D>($"Gates/{GateId}On"),
-                content.Load<Texture2D>($"Gates/{GateId}Off"),
-                content.Load<Texture2D>($"Gates/{GateId}Faulty")
-            });
+            Sprite = content.Load<Texture2D>($"Tiles/LogicGate");
         }
 
         public override void PlacedInWorld()
@@ -120,7 +108,7 @@ namespace TerraLogic.Tiles
 
         internal override string GetData()
         {
-            return (IsFaulty) ? "?" : (State) ? "+" : "-";
+            return !Created? "-" : (IsFaulty) ? "?" : (State) ? "+" : "-";
         }
     }
 }

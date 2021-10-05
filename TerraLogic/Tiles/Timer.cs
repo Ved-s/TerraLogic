@@ -19,8 +19,7 @@ namespace TerraLogic.Tiles
         static readonly string[] Intervals = new string[] { "1/4", "1/2", "1", "3", "5" };
         static readonly uint[] IntervalValues = new uint[] { 15, 30, 60, 120, 300 };
 
-        static readonly Texture2D[] TexturesOn = new Texture2D[5];
-        static readonly Texture2D[] TexturesOff = new Texture2D[5];
+        static Texture2D Sprite;
 
         internal TimerType Type = TimerType.Sec1;
         internal bool State = false;
@@ -28,7 +27,7 @@ namespace TerraLogic.Tiles
 
         public override void Draw(Rectangle rect, bool isScreenPos = false)
         {
-            TerraLogic.SpriteBatch.Draw((State? TexturesOn : TexturesOff)[(int)Type], isScreenPos ? rect : PanNZoom.WorldToScreen(rect), Color.White);
+            TerraLogic.SpriteBatch.DrawTileSprite(Sprite, (int)Type, State?1:0, isScreenPos ? rect : PanNZoom.WorldToScreen(rect), Color.White);
         }
 
         public override void Update()
@@ -52,20 +51,7 @@ namespace TerraLogic.Tiles
 
         public override void LoadContent(ContentManager content)
         {
-            TexturesOn[0] = content.Load<Texture2D>("Tiles/TimerQ");
-            TexturesOff[0] = content.Load<Texture2D>("Tiles/TimerQOff");
-
-            TexturesOn[1] = content.Load<Texture2D>("Tiles/TimerH");
-            TexturesOff[1] = content.Load<Texture2D>("Tiles/TimerHOff");
-
-            TexturesOn[2] = content.Load<Texture2D>("Tiles/Timer1S");
-            TexturesOff[2] = content.Load<Texture2D>("Tiles/Timer1SOff");
-
-            TexturesOn[3] = content.Load<Texture2D>("Tiles/Timer3S");
-            TexturesOff[3] = content.Load<Texture2D>("Tiles/Timer3SOff");
-
-            TexturesOn[4] = content.Load<Texture2D>("Tiles/Timer5S");
-            TexturesOff[4] = content.Load<Texture2D>("Tiles/Timer5SOff");
+            Sprite = content.Load<Texture2D>("Tiles/Timer");
         }
 
         internal override Tile CreateTile(string data, bool preview)

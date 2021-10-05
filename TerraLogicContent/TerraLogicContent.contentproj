@@ -57,123 +57,6 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Tiles\BigSwitchUp.png">
-      <Name>BigSwitchUp</Name>
-      <Importer>TextureImporter</Importer>
-      <Processor>TextureProcessor</Processor>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Tiles\BigSwitchDown.png">
-      <Name>BigSwitchDown</Name>
-      <Importer>TextureImporter</Importer>
-      <Processor>TextureProcessor</Processor>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Tiles\LogicLampOn.png">
-      <Name>LogicLampOn</Name>
-      <Importer>TextureImporter</Importer>
-      <Processor>TextureProcessor</Processor>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Tiles\LogicLampOff.png">
-      <Name>LogicLampOff</Name>
-      <Importer>TextureImporter</Importer>
-      <Processor>TextureProcessor</Processor>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Tiles\LogicLampFaulty.png">
-      <Name>LogicLampFaulty</Name>
-      <Importer>TextureImporter</Importer>
-      <Processor>TextureProcessor</Processor>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Gates\AndFaulty.png">
-      <Name>AndFaulty</Name>
-      <Importer>TextureImporter</Importer>
-      <Processor>TextureProcessor</Processor>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Gates\AndOff.png">
-      <Name>AndOff</Name>
-      <Importer>TextureImporter</Importer>
-      <Processor>TextureProcessor</Processor>
-    </Compile>
-    <Compile Include="Gates\AndOn.png">
-      <Name>AndOn</Name>
-      <Importer>TextureImporter</Importer>
-      <Processor>TextureProcessor</Processor>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Gates\OrOff.png">
-      <Name>OrOff</Name>
-      <Importer>TextureImporter</Importer>
-      <Processor>TextureProcessor</Processor>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Gates\XorOn.png">
-      <Name>XorOn</Name>
-      <Importer>TextureImporter</Importer>
-      <Processor>TextureProcessor</Processor>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Gates\NandOn.png">
-      <Name>NandOn</Name>
-      <Importer>TextureImporter</Importer>
-      <Processor>TextureProcessor</Processor>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Gates\NandOff.png">
-      <Name>NandOff</Name>
-      <Importer>TextureImporter</Importer>
-      <Processor>TextureProcessor</Processor>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Gates\OrFaulty.png">
-      <Name>OrFaulty</Name>
-      <Importer>TextureImporter</Importer>
-      <Processor>TextureProcessor</Processor>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Gates\NandFaulty.png">
-      <Name>NandFaulty</Name>
-      <Importer>TextureImporter</Importer>
-      <Processor>TextureProcessor</Processor>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Gates\OrOn.png">
-      <Name>OrOn</Name>
-      <Importer>TextureImporter</Importer>
-      <Processor>TextureProcessor</Processor>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Gates\XorOff.png">
-      <Name>XorOff</Name>
-      <Importer>TextureImporter</Importer>
-      <Processor>TextureProcessor</Processor>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Gates\XorFaulty.png">
-      <Name>XorFaulty</Name>
-      <Importer>TextureImporter</Importer>
-      <Processor>TextureProcessor</Processor>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="Consolas10.spritefont">
       <Name>Consolas10</Name>
       <Importer>FontDescriptionImporter</Importer>
@@ -181,55 +64,8 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Gates\NorOff.png">
-      <Name>NorOff</Name>
-      <Importer>TextureImporter</Importer>
-      <Processor>TextureProcessor</Processor>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Gates\NorOn.png">
-      <Name>NorOn</Name>
-      <Importer>TextureImporter</Importer>
-      <Processor>TextureProcessor</Processor>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Gates\NorFaulty.png">
-      <Name>NorFaulty</Name>
-      <Importer>TextureImporter</Importer>
-      <Processor>TextureProcessor</Processor>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Gates\XnorOn.png">
-      <Name>XnorOn</Name>
-      <Importer>TextureImporter</Importer>
-      <Processor>TextureProcessor</Processor>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Gates\XnorOff.png">
-      <Name>XnorOff</Name>
-      <Importer>TextureImporter</Importer>
-      <Processor>TextureProcessor</Processor>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Gates\XnorFaulty.png">
-      <Name>XnorFaulty</Name>
-      <Importer>TextureImporter</Importer>
-      <Processor>TextureProcessor</Processor>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Tiles\JunctionBoxCross.png">
-      <Name>JunctionBoxCross</Name>
-      <Importer>TextureImporter</Importer>
-      <Processor>TextureProcessor</Processor>
-    </Compile>
-    <Compile Include="Tiles\JunctionBoxTL.png">
-      <Name>JunctionBoxTL</Name>
+    <Compile Include="Tiles\JunctionBox.png">
+      <Name>JunctionBox</Name>
       <Importer>TextureImporter</Importer>
       <Processor>TextureProcessor</Processor>
     </Compile>
@@ -255,76 +91,6 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Tiles\Timer1S.png">
-      <Name>Timer1S</Name>
-      <Importer>TextureImporter</Importer>
-      <Processor>TextureProcessor</Processor>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Tiles\Timer1SOff.png">
-      <Name>Timer1SOff</Name>
-      <Importer>TextureImporter</Importer>
-      <Processor>TextureProcessor</Processor>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Tiles\Timer3SOff.png">
-      <Name>Timer3SOff</Name>
-      <Importer>TextureImporter</Importer>
-      <Processor>TextureProcessor</Processor>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Tiles\Timer3S.png">
-      <Name>Timer3S</Name>
-      <Importer>TextureImporter</Importer>
-      <Processor>TextureProcessor</Processor>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Tiles\Timer5S.png">
-      <Name>Timer5S</Name>
-      <Importer>TextureImporter</Importer>
-      <Processor>TextureProcessor</Processor>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Tiles\Timer5SOff.png">
-      <Name>Timer5SOff</Name>
-      <Importer>TextureImporter</Importer>
-      <Processor>TextureProcessor</Processor>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Tiles\TimerQ.png">
-      <Name>TimerQ</Name>
-      <Importer>TextureImporter</Importer>
-      <Processor>TextureProcessor</Processor>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Tiles\TimerH.png">
-      <Name>TimerH</Name>
-      <Importer>TextureImporter</Importer>
-      <Processor>TextureProcessor</Processor>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Tiles\TimerHOff.png">
-      <Name>TimerHOff</Name>
-      <Importer>TextureImporter</Importer>
-      <Processor>TextureProcessor</Processor>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Tiles\TimerQOff.png">
-      <Name>TimerQOff</Name>
-      <Importer>TextureImporter</Importer>
-      <Processor>TextureProcessor</Processor>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="HGradient.fx">
       <Name>HGradient</Name>
       <Importer>EffectImporter</Importer>
@@ -339,20 +105,43 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Tiles\GemsparkBlock.png">
-      <Name>GemsparkBlock</Name>
+    <Compile Include="Tiles\LogicLamp.png">
+      <Name>LogicLamp</Name>
       <Importer>TextureImporter</Importer>
       <Processor>TextureProcessor</Processor>
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Tiles\SwitchDown.png">
-      <Name>SwitchDown</Name>
+    <Compile Include="Tiles\LogicGate.png">
+      <Name>LogicGate</Name>
       <Importer>TextureImporter</Importer>
       <Processor>TextureProcessor</Processor>
     </Compile>
-    <Compile Include="Tiles\SwitchUp.png">
-      <Name>SwitchUp</Name>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Tiles\Lever.png">
+      <Name>Lever</Name>
+      <Importer>TextureImporter</Importer>
+      <Processor>TextureProcessor</Processor>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Tiles\Timer.png">
+      <Name>Timer</Name>
+      <Importer>TextureImporter</Importer>
+      <Processor>TextureProcessor</Processor>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Tiles\Switch.png">
+      <Name>Switch</Name>
+      <Importer>TextureImporter</Importer>
+      <Processor>TextureProcessor</Processor>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Tiles\GemsparkBlock.png">
+      <Name>GemsparkBlock</Name>
       <Importer>TextureImporter</Importer>
       <Processor>TextureProcessor</Processor>
     </Compile>

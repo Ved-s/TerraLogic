@@ -15,20 +15,19 @@ namespace TerraLogic.Tiles
 
         public JunctionType Type = JunctionType.Cross;
 
-        static Texture2D Cross, TL;
+        static Texture2D Sprite;
 
         public override void LoadContent(ContentManager content)
         {
-            Cross = content.Load<Texture2D>("Tiles/JunctionBoxCross");
-            TL = content.Load<Texture2D>("Tiles/JunctionBoxTL");
+            Sprite = content.Load<Texture2D>("Tiles/JunctionBox");
         }
 
         public override void Draw(Rectangle rect, bool isScreenPos = false)
         {
-            TerraLogic.SpriteBatch.Draw(
-                (Type == JunctionType.Cross) ? Cross : TL,
-                isScreenPos ? rect : PanNZoom.WorldToScreen(rect), null, Color.White, 0f, Vector2.Zero,
-                Type == JunctionType.TR ? SpriteEffects.FlipHorizontally : SpriteEffects.None, 0);
+            rect = isScreenPos ? rect : PanNZoom.WorldToScreen(rect);
+            Rectangle spriteRect = new Rectangle((int)Type * Gui.Logics.TileSize.X, 0, Gui.Logics.TileSize.X, Gui.Logics.TileSize.Y);
+
+            TerraLogic.SpriteBatch.Draw(Sprite, rect, spriteRect, Color.White);
         }
 
         public override void RightClick(bool held, bool preview)

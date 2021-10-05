@@ -28,8 +28,8 @@ namespace TerraLogic
         public static Point WorldToScreen(Vector2 v) 
         {
             Point p = new Point();
-            p.X = (int)((v.X - Position.X) * Zoom);
-            p.Y = (int)((v.Y - Position.Y) * Zoom);
+            p.X = (int)Math.Floor((v.X - Position.X) * Zoom);
+            p.Y = (int)Math.Floor((v.Y - Position.Y) * Zoom);
             return p;
         }
         public static Vector2 WorldToScreenF(Vector2 v)
@@ -50,8 +50,8 @@ namespace TerraLogic
         {
             Rectangle r = new Rectangle();
             r.Location = WorldToScreen(rect.Location);
-            r.Width = (int)(rect.Width * Zoom);
-            r.Height = (int)(rect.Height * Zoom);
+            r.Width = (int)Math.Ceiling(rect.Width * Zoom);
+            r.Height = (int)Math.Ceiling(rect.Height * Zoom);
             return r;
         }
         public static RectangleF ScreenToWorld(Rectangle rect)

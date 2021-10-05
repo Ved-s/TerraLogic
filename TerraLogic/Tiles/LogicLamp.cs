@@ -16,14 +16,14 @@ namespace TerraLogic.Tiles
 
         public override string DisplayName => $"Logic Gate Lamp ({State})";
 
-        static Texture2D On, Off, Faulty;
+        static Texture2D Sprite;
 
         internal LampState State;
 
         public override void Draw(Rectangle rect, bool isScreenPos = false)
         {
-            TerraLogic.SpriteBatch.Draw(
-                (State == LampState.On)? On : (State == LampState.Faulty || State == LampState.FaultyTriggered)? Faulty : Off, 
+            TerraLogic.SpriteBatch.DrawTileSprite(
+                Sprite, Math.Min((int)State, 2), 0, 
                 isScreenPos ? rect : PanNZoom.WorldToScreen(rect), Color.White);
         }
 
@@ -55,9 +55,7 @@ namespace TerraLogic.Tiles
 
         public override void LoadContent(ContentManager content)
         {
-            Off = content.Load<Texture2D>("Tiles/LogicLampOff");
-            On = content.Load<Texture2D>("Tiles/LogicLampOn");
-            Faulty = content.Load<Texture2D>("Tiles/LogicLampFaulty");
+            Sprite = content.Load<Texture2D>("Tiles/LogicLamp");
         }
 
         public override void WireSignal(int wire, Point origin)
@@ -105,6 +103,6 @@ namespace TerraLogic.Tiles
             return (State == LampState.On) ? "+" : (State == LampState.Faulty) ? "?" : "-";
         }
 
-        internal enum LampState { On, Off, Faulty, FaultyTriggered }
+        internal enum LampState { Off, On, Faulty, FaultyTriggered }
     }
 }

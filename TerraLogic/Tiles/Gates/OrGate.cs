@@ -10,7 +10,8 @@ namespace TerraLogic.Tiles.Gates
 {
     class OrGate : LogicGate
     {
-        protected override string GateId => "Or";
+        protected override string GateName => "Or";
+        protected override int GateId => 1;
 
         protected override bool Compute(bool[] lamps)
         {

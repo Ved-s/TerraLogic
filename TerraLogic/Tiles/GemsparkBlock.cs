@@ -37,22 +37,22 @@ namespace TerraLogic.Tiles
             if (Created)
             {
 
-                byte neighboursX = 0;
-                byte neighboursY = 0;
+                byte neighbours = 0;
 
-                if (Gui.Logics.TileArray[Pos.X + 0, Pos.Y - 1] is GemsparkBlock) neighboursX |= 1;
-                if (Gui.Logics.TileArray[Pos.X + 1, Pos.Y - 1] is GemsparkBlock) neighboursX |= 2;
-                if (Gui.Logics.TileArray[Pos.X + 1, Pos.Y + 0] is GemsparkBlock) neighboursX |= 4;
-                if (Gui.Logics.TileArray[Pos.X + 1, Pos.Y + 1] is GemsparkBlock) neighboursX |= 8;
+                if (Gui.Logics.TileArray[Pos.X + 0, Pos.Y - 1] is GemsparkBlock) neighbours |= 1;
+                if (Gui.Logics.TileArray[Pos.X + 1, Pos.Y - 1] is GemsparkBlock) neighbours |= 2;
+                if (Gui.Logics.TileArray[Pos.X + 1, Pos.Y + 0] is GemsparkBlock) neighbours |= 4;
+                if (Gui.Logics.TileArray[Pos.X + 1, Pos.Y + 1] is GemsparkBlock) neighbours |= 8;
 
-                if (Gui.Logics.TileArray[Pos.X + 0, Pos.Y + 1] is GemsparkBlock) neighboursY |= 1;
-                if (Gui.Logics.TileArray[Pos.X - 1, Pos.Y + 1] is GemsparkBlock) neighboursY |= 2;
-                if (Gui.Logics.TileArray[Pos.X - 1, Pos.Y + 0] is GemsparkBlock) neighboursY |= 4;
-                if (Gui.Logics.TileArray[Pos.X - 1, Pos.Y - 1] is GemsparkBlock) neighboursY |= 8;
+                if (Gui.Logics.TileArray[Pos.X + 0, Pos.Y + 1] is GemsparkBlock) neighbours |= 16;
+                if (Gui.Logics.TileArray[Pos.X - 1, Pos.Y + 1] is GemsparkBlock) neighbours |= 32;
+                if (Gui.Logics.TileArray[Pos.X - 1, Pos.Y + 0] is GemsparkBlock) neighbours |= 64;
+                if (Gui.Logics.TileArray[Pos.X - 1, Pos.Y - 1] is GemsparkBlock) neighbours |= 128;
 
+              
                 Rectangle spriteRect = new Rectangle(
-                    (int)(Gui.Logics.TileSize.X * neighboursX),
-                    (int)(Gui.Logics.TileSize.Y * neighboursY),
+                    (int)(Gui.Logics.TileSize.X * PackedSprite.CalculatedPositions[neighbours].X),
+                    (int)(Gui.Logics.TileSize.Y * PackedSprite.CalculatedPositions[neighbours].Y),
                     (int)(Gui.Logics.TileSize.X),
                     (int)(Gui.Logics.TileSize.Y));
 

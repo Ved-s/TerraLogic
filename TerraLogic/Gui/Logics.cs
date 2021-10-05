@@ -74,6 +74,7 @@ namespace TerraLogic.Gui
         public static Point TileSize = new Point(16, 16);
 
         static Stack<WireSignal> WiresToSignal = new Stack<WireSignal>();
+        
 
         internal static void LoadTileContent(ContentManager content)
         {
@@ -402,8 +403,14 @@ namespace TerraLogic.Gui
         }
         private void DrawWires()
         {
-            TerraLogic.SpriteBatch.Begin(SpriteSortMode.Deferred, BlendState.Additive, PanNZoom.Zoom > 1 ? SamplerState.PointWrap : SamplerState.LinearWrap, null, null);
+            TerraLogic.SpriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, PanNZoom.Zoom > 1 ? SamplerState.PointWrap : SamplerState.LinearWrap, null, null);
 
+            int wireTop;
+            int wireLeft;
+            int wireBottom;
+            int wireRight;
+
+            Rectangle rect;
 
             Vector2 end = (PanNZoom.ScreenToWorld(new Point(Bounds.Right, Bounds.Bottom).Add(new Point(16, 16))) / TileSize.ToVector2());
 
@@ -424,80 +431,30 @@ namespace TerraLogic.Gui
                             case JunctionBox.JunctionType.TR: wireSprite = WireTR; break;
                         }
 
-                    int wireTop = WireArray[x, y - 1];
-                    int wireLeft = WireArray[x - 1, y];
-                    int wireBottom = WireArray[x, y + 1];
-                    int wireRight = WireArray[x + 1, y];
+                    wireTop = WireArray[x, y - 1];
+                    wireLeft = WireArray[x - 1, y];
+                    wireBottom = WireArray[x, y + 1];
+                    wireRight = WireArray[x + 1, y];
 
-                    RectangleF rect = new RectangleF(x * TileSize.X, y * TileSize.Y, TileSize.X, TileSize.Y);
+                    rect = new Rectangle(x * TileSize.X, y * TileSize.Y, TileSize.X, TileSize.Y);
 
-                    bool blackDrawn = false;
-
-                    bool anyTop = false, anyRight = false, anyBottom = false, anyLeft = false;
-                    bool[] top = new bool[WireColorMapping.Count];
-                    bool[] right = new bool[WireColorMapping.Count];
-                    bool[] bottom = new bool[WireColorMapping.Count];
-                    bool[] left = new bool[WireColorMapping.Count];
-
-                    void CalcWire(byte id)
-                    {
-                        if (!GetWire(wire, id)) return;
-
-                        top[id] = y > 0 && GetWire(wireTop, id);
-                        left[id] = x > 0 && GetWire(wireLeft, id);
-                        bottom[id] = y < WireArray.Height - 1 && GetWire(wireBottom, id);
-                        right[id] = x < WireArray.Width - 1 && GetWire(wireRight, id);
-
-                        anyTop |= top[id];
-                        anyRight |= right[id];
-                        anyBottom |= bottom[id];
-                        anyLeft |= left[id];
-                    }
-
-                    void DrawWire(byte id, bool @override)
+                    void DrawWire(byte id)
                     {
                         if (!GetWire(wire, id)) return;
 
                         Color c = WireColorMapping[id];
                         if (SelectedWireColor != id)
-                        {
-                            c.R /= 2;
-                            c.G /= 2;
-                            c.B /= 2;
-                        }
-
-                        if (!blackDrawn)
-                        {
-                            TerraLogic.SpriteBatch.End();
-                            TerraLogic.SpriteBatch.Begin(SpriteSortMode.Deferred, null, PanNZoom.Zoom > 1 ? SamplerState.PointWrap : SamplerState.LinearWrap, null, null);
-                            TerraLogic.SpriteBatch.Draw(wireSprite, PanNZoom.WorldToScreen(rect).PixelStretch(), CalculateWireSpriteOffset(anyTop, anyRight, anyBottom, anyLeft), Color.Black, 0f, Vector2.Zero, SpriteEffects.None, 0);
-                            TerraLogic.SpriteBatch.End();
-                            TerraLogic.SpriteBatch.Begin(SpriteSortMode.Deferred, BlendState.Additive, PanNZoom.Zoom > 1 ? SamplerState.PointWrap : SamplerState.LinearWrap, null, null);
-                        }
-                        blackDrawn = true;
-
-                        if (@override)
-                        {
-                            TerraLogic.SpriteBatch.End();
-                            TerraLogic.SpriteBatch.Begin(SpriteSortMode.Deferred, null, PanNZoom.Zoom > 1 ? SamplerState.PointWrap : SamplerState.LinearWrap, null, null);
-                            TerraLogic.SpriteBatch.Draw(wireSprite, PanNZoom.WorldToScreen(rect).PixelStretch(), CalculateWireSpriteOffset(top[id], right[id], bottom[id], left[id]), Color.Black, 0f, Vector2.Zero, SpriteEffects.None, 0);
-                            TerraLogic.SpriteBatch.End();
-                            TerraLogic.SpriteBatch.Begin(SpriteSortMode.Deferred, BlendState.Additive, PanNZoom.Zoom > 1 ? SamplerState.PointWrap : SamplerState.LinearWrap, null, null);
-                        }
-
-                        TerraLogic.SpriteBatch.Draw(wireSprite, PanNZoom.WorldToScreen(rect).PixelStretch(), CalculateWireSpriteOffset(top[id], right[id], bottom[id], left[id]), c, 0f, Vector2.Zero, SpriteEffects.None, 0);
-
+                            c *= 0.5f;
+                        
+                        TerraLogic.SpriteBatch.Draw(wireSprite, PanNZoom.WorldToScreen(rect), CalculateWireSpriteOffset(GetWire(wireTop, id), GetWire(wireRight, id), GetWire(wireBottom, id), GetWire(wireLeft, id)), c, 0f, Vector2.Zero, SpriteEffects.None, 0);
                     }
 
                     for (byte id = 0; id < WireColorMapping.Count; id++)
-                        CalcWire(id);
-
-                    for (byte id = 0; id < WireColorMapping.Count; id++)
-                        if (id != SelectedWireColor) DrawWire(id, false);
+                        if (id != SelectedWireColor) DrawWire(id);
 
                     if (SelectedWireColor < WireColorMapping.Count)
                     {
-                        DrawWire(SelectedWireColor, true);
+                        DrawWire(SelectedWireColor);
                     }
 
                 }
@@ -508,6 +465,8 @@ namespace TerraLogic.Gui
             TerraLogic.SpriteBatch.Begin(SpriteSortMode.Deferred, null, PanNZoom.Zoom > 1 ? SamplerState.PointWrap : SamplerState.LinearWrap, null, null);
 
             Vector2 end = PanNZoom.ScreenToWorld(new Point(Bounds.Right, Bounds.Bottom)) / new Vector2(16, 16);
+
+            end += new Vector2(1, 1);
 
             for (int y = (int)(PanNZoom.Position.Y / 16); y < Math.Min(TileArray.Height, (int)end.Y); y++)
                 for (int x = (int)(PanNZoom.Position.X / 16); x < Math.Min(TileArray.Width, (int)end.X); x++)
@@ -565,7 +524,7 @@ namespace TerraLogic.Gui
 
             int updateId = Rnd.Next();
 
-            HashSet<LogicGate> gatesToUpdate = new HashSet<LogicGate>();
+             HashSet<LogicGate> gatesToUpdate = new HashSet<LogicGate>();
 
             for (int y = rect.Y; y < rect.Bottom; y++)
                 for (int x = rect.X; x < rect.Right; x++)
@@ -602,55 +561,72 @@ namespace TerraLogic.Gui
                 }
 
                 Point pos = new Point(w.X, w.Y - 1); // top
-                if (TileArray[pos.X, pos.Y] is JunctionBox topBox)
-                    switch (topBox.Type)
-                    {
-                        case JunctionBox.JunctionType.Cross: pos.Y--; break;
-                        case JunctionBox.JunctionType.TL: pos.X++; break;
-                        case JunctionBox.JunctionType.TR: pos.X--; break;
-                    }
-
                 int nextWire = WireArray[pos.X, pos.Y] & w.Wire;
-                if (nextWire > 0) WiresToSignal.Push(w.NewPos(pos, nextWire));
+                if (nextWire > 0)
+                {
+                    if (TileArray[pos.X, pos.Y] is JunctionBox topBox)
+                        switch (topBox.Type)
+                        {
+                            case JunctionBox.JunctionType.Cross: pos.Y--; break;
+                            case JunctionBox.JunctionType.TL: pos.X++; break;
+                            case JunctionBox.JunctionType.TR: pos.X--; break;
+                        }
+
+                    nextWire = WireArray[pos.X, pos.Y] & w.Wire;
+                    WiresToSignal.Push(w.NewPos(pos, nextWire));
+                }
 
 
                 pos = new Point(w.X + 1, w.Y); // right
-                if (TileArray[pos.X, pos.Y] is JunctionBox rightBox)
-                    switch (rightBox.Type)
-                    {
-                        case JunctionBox.JunctionType.Cross: pos.X++; break;
-                        case JunctionBox.JunctionType.TL: pos.Y--; break;
-                        case JunctionBox.JunctionType.TR: pos.Y++; break;
-                    }
-
                 nextWire = WireArray[pos.X, pos.Y] & w.Wire;
-                if (nextWire > 0) WiresToSignal.Push(w.NewPos(pos, nextWire));
+
+                if (nextWire > 0)
+                {
+                    if (TileArray[pos.X, pos.Y] is JunctionBox rightBox)
+                        switch (rightBox.Type)
+                        {
+                            case JunctionBox.JunctionType.Cross: pos.X++; break;
+                            case JunctionBox.JunctionType.TL: pos.Y--; break;
+                            case JunctionBox.JunctionType.TR: pos.Y++; break;
+                        }
+
+                    nextWire = WireArray[pos.X, pos.Y] & nextWire;
+                    WiresToSignal.Push(w.NewPos(pos, nextWire));
+                }
 
 
                 pos = new Point(w.X, w.Y + 1); // bottom
-                if (TileArray[pos.X, pos.Y] is JunctionBox bottomBox)
-                    switch (bottomBox.Type)
-                    {
-                        case JunctionBox.JunctionType.Cross: pos.Y++; break;
-                        case JunctionBox.JunctionType.TL: pos.X--; break;
-                        case JunctionBox.JunctionType.TR: pos.X++; break;
-                    }
-
                 nextWire = WireArray[pos.X, pos.Y] & w.Wire;
-                if (nextWire > 0) WiresToSignal.Push(w.NewPos(pos, nextWire));
+                if (nextWire > 0)
+                {
+                    if (TileArray[pos.X, pos.Y] is JunctionBox bottomBox)
+                        switch (bottomBox.Type)
+                        {
+                            case JunctionBox.JunctionType.Cross: pos.Y++; break;
+                            case JunctionBox.JunctionType.TL: pos.X--; break;
+                            case JunctionBox.JunctionType.TR: pos.X++; break;
+                        }
+
+                    nextWire = WireArray[pos.X, pos.Y] & nextWire;
+                    WiresToSignal.Push(w.NewPos(pos, nextWire));
+                }
 
 
                 pos = new Point(w.X - 1, w.Y); // left
-                if (TileArray[pos.X, pos.Y] is JunctionBox leftBox)
-                    switch (leftBox.Type)
-                    {
-                        case JunctionBox.JunctionType.Cross: pos.X--; break;
-                        case JunctionBox.JunctionType.TL: pos.Y++; break;
-                        case JunctionBox.JunctionType.TR: pos.Y--; break;
-                    }
-
                 nextWire = WireArray[pos.X, pos.Y] & w.Wire;
-                if (nextWire > 0) WiresToSignal.Push(w.NewPos(pos, nextWire));
+                if (nextWire > 0)
+                {
+                    if (TileArray[pos.X, pos.Y] is JunctionBox leftBox)
+                        switch (leftBox.Type)
+                        {
+                            case JunctionBox.JunctionType.Cross: pos.X--; break;
+                            case JunctionBox.JunctionType.TL: pos.Y++; break;
+                            case JunctionBox.JunctionType.TR: pos.Y--; break;
+                        }
+
+                    nextWire = WireArray[pos.X, pos.Y] & nextWire;
+                    WiresToSignal.Push(w.NewPos(pos, nextWire));
+                }
             }
             foreach (LogicGate lg in gatesToUpdate) lg.UpdateState();
 
