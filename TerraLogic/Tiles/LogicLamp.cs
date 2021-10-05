@@ -3,9 +3,6 @@ using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
 
 namespace TerraLogic.Tiles
 {
@@ -23,7 +20,7 @@ namespace TerraLogic.Tiles
         public override void Draw(Rectangle rect, bool isScreenPos = false)
         {
             TerraLogic.SpriteBatch.DrawTileSprite(
-                Sprite, Math.Min((int)State, 2), 0, 
+                Sprite, Math.Min((int)State, 2), 0,
                 isScreenPos ? rect : PanNZoom.WorldToScreen(rect), Color.White);
         }
 
@@ -40,7 +37,7 @@ namespace TerraLogic.Tiles
             while (Gui.Logics.TileArray[Pos.X, scanPos] is LogicLamp)
             {
                 LogicLamp lamp = Gui.Logics.TileArray[Pos.X, scanPos] as LogicLamp;
-                switch (lamp.State) 
+                switch (lamp.State)
                 {
                     case LampState.Off: lamps.Add(false); break;
                     case LampState.On: lamps.Add(true); break;
@@ -60,12 +57,14 @@ namespace TerraLogic.Tiles
 
         public override void WireSignal(int wire, Point origin)
         {
-            switch (State) 
-            {
-                case LampState.On: State = LampState.Off; break;
-                case LampState.Off: State = LampState.On; break;
-                case LampState.Faulty: State = LampState.FaultyTriggered; break;
-            }
+            if (wire.Bits() % 2 == 1)
+                switch (State)
+                {
+                    case LampState.On: State = LampState.Off; break;
+                    case LampState.Off: State = LampState.On; break;
+                    case LampState.Faulty: State = LampState.FaultyTriggered; break;
+                }
+
         }
 
         internal override Tile CreateTile(string data, bool preview)
@@ -75,7 +74,7 @@ namespace TerraLogic.Tiles
 
         public override void BeforeDestroy()
         {
-            int scanPos = Pos.Y+1;
+            int scanPos = Pos.Y + 1;
 
             List<bool> lamps = new List<bool>();
             bool foundFaulty = false;

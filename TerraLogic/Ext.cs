@@ -64,5 +64,16 @@ namespace TerraLogic
                 y += size.Y;
             }
         }
+
+        public static int Bits(this int value) 
+        {
+            int bits = 0;
+            for (int i = 0; i < 32; i++) 
+            {
+                if ((value & 1) == 1) bits++;
+                value >>= 1;
+            }
+            return bits;
+        }
     }
 }

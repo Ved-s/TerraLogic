@@ -20,7 +20,7 @@ namespace TerraLogic.Gui
 
         internal static Dictionary<string, Tile> TileMap = new Dictionary<string, Tile>();
         internal static Dictionary<string, Tile> TilePreviews = new Dictionary<string, Tile>();
-        internal static ChunkArray2D WireUpdateArray = new ChunkArray2D(8);
+        internal static ChunkArray2D<long> WireUpdateArray = new ChunkArray2D<long>(8);
 
         internal static List<Tools.Tool> Tools = new List<Tools.Tool>();
 
@@ -535,8 +535,16 @@ namespace TerraLogic.Gui
             while (WiresToSignal.Count > 0)
             {
                 WireSignal w = WiresToSignal.Pop();
-                if (WireUpdateArray[w.X, w.Y] == updateId || w.Wire == 0) continue;
-                WireUpdateArray[w.X, w.Y] = updateId;
+
+                long fullUpdate = WireUpdateArray[w.X, w.Y];
+
+                if (fullUpdate >> 32 == updateId)
+                {
+                    w.Wire = (int)((fullUpdate & 0xffffffff) ^ w.Wire) & w.Wire;
+                    if (w.Wire == 0) continue;
+                    WireUpdateArray[w.X, w.Y] = fullUpdate | (uint)w.Wire;
+                }
+                else WireUpdateArray[w.X, w.Y] = ((long)updateId << 32) | (uint)w.Wire;
 
                 if (!w.IsAtOrigin)
                 {

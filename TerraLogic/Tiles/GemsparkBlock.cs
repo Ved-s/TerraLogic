@@ -92,7 +92,8 @@ namespace TerraLogic.Tiles
 
         public override void WireSignal(int wire, Point origin)
         {
-            State = !State;
+            if (wire.Bits() % 2 == 1)
+                State = !State;
         }
     }
 }
