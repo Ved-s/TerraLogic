@@ -39,7 +39,7 @@ namespace TerraLogic.Gui
 
                 Rectangle rect = new Rectangle(3, ypos, 12, 12).WithOffset(Bounds.Location);
 
-                if (Logics.SelectedWireColor != i)
+                if (!Logics.GetWire(Logics.SelectedWire, (byte)i))
                 {
                     c.R /= 2;
                     c.G /= 2;
@@ -95,7 +95,7 @@ namespace TerraLogic.Gui
                 {
                     if (Logics.SelectedToolId != -1) Logics.Tools[Logics.SelectedToolId].Deselected();
 
-                    Logics.SelectedWireColor = newColor;
+                    Logics.SelectedWire ^= (1 << newColor);
                     Logics.SelectedTileId = null;
                     Logics.SelectedTilePreview = null;
                     Logics.SelectedToolId = -1;

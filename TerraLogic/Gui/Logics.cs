@@ -56,7 +56,7 @@ namespace TerraLogic.Gui
         internal static string SelectedTileId = null;
         internal static Tile SelectedTilePreview = null;
         internal static int SelectedToolId = -1;
-        internal static byte SelectedWireColor = 0;
+        internal static int SelectedWire = 0;
         internal static PastePreview PastePreview = null;
 
         internal static List<Color> WireColorMapping = new List<Color>()
@@ -200,7 +200,7 @@ namespace TerraLogic.Gui
             SelectedToolId = -1;
             SelectedTileId = null;
             SelectedTilePreview = null;
-            SelectedWireColor = 255;
+            SelectedWire = 0;
             global::TerraLogic.Tools.Select.Instance.Selection = new Rectangle();
             PastePreview = new PastePreview() { WireData = data[0], Size = size, Tiles = tiles };
         }
@@ -210,7 +210,7 @@ namespace TerraLogic.Gui
             TerraLogic.SpriteBatch.End();
             DrawGrid();
             DrawTiles();
-            if (SelectedWireColor < WireColorMapping.Count
+            if (SelectedWire > 0
                 || SelectedTileId != null
                 || (SelectedToolId > -1 && Tools[SelectedToolId].ShowWires)) DrawWires();
             DrawTilePreview();
@@ -251,8 +251,8 @@ namespace TerraLogic.Gui
                         string data = SelectedTilePreview.GetData();
                         SetTile(worldpos, SelectedTilePreview.Id + (data is null ? "" : ":" + data));
                     }
-                    else if (SelectedWireColor < WireColorMapping.Count)
-                        SetWire(worldpos.X, worldpos.Y, SelectedWireColor, true);
+                    else if (SelectedWire > 0)
+                        SetWires(worldpos.X, worldpos.Y, SelectedWire, true);
                 }
                 if (@event == EventType.Presssed) 
                 {
@@ -268,11 +268,11 @@ namespace TerraLogic.Gui
                                 for (int x = selection.X; x < selection.Right; x++)
                                     SetTile(x, y, data);
                         }
-                        else if (SelectedWireColor < WireColorMapping.Count) 
+                        else if (SelectedWire > 0) 
                         {
                             for (int y = selection.Y; y < selection.Bottom; y++)
                                 for (int x = selection.X; x < selection.Right; x++)
-                                    SetWire(x, y, SelectedWireColor, true);
+                                    SetWires(x, y, SelectedWire, true);
                         }
                     }
 
@@ -303,7 +303,7 @@ namespace TerraLogic.Gui
                 if (@event == EventType.Presssed || @event == EventType.Hold)
                 {
 
-                    if (SelectedWireColor >= WireColorMapping.Count)
+                    if (SelectedWire == 0)
                     {
                         Tile t = TileArray[worldpos.X, worldpos.Y];
                         if (t != null)
@@ -315,8 +315,8 @@ namespace TerraLogic.Gui
                 if (@event == EventType.Hold)
                 {
 
-                    if (SelectedWireColor < WireColorMapping.Count)
-                        SetWire(worldpos.X, worldpos.Y, SelectedWireColor, false);
+                    if (SelectedWire > 0)
+                        SetWires(worldpos.X, worldpos.Y, SelectedWire, false);
 
                 }
             }
@@ -330,18 +330,18 @@ namespace TerraLogic.Gui
                 {
                     switch (key)
                     {
-                        case Keys.D1: SelectedWireColor = 0; break;
-                        case Keys.D2: SelectedWireColor = 1; break;
-                        case Keys.D3: SelectedWireColor = 2; break;
-                        case Keys.D4: SelectedWireColor = 3; break;
-                        case Keys.D5: SelectedWireColor = 4; break;
-                        case Keys.D6: SelectedWireColor = 5; break;
-                        case Keys.D7: SelectedWireColor = 6; break;
-                        case Keys.D8: SelectedWireColor = 7; break;
-                        case Keys.D9: SelectedWireColor = 8; break;
+                        case Keys.D1: SelectedWire ^= 1; break;
+                        case Keys.D2: SelectedWire ^= 2; break;
+                        case Keys.D3: SelectedWire ^= 4; break;
+                        case Keys.D4: SelectedWire ^= 8; break;
+                        case Keys.D5: SelectedWire ^= 16; break;
+                        case Keys.D6: SelectedWire ^= 32; break;
+                        case Keys.D7: SelectedWire ^= 64; break;
+                        case Keys.D8: SelectedWire ^= 128; break;
+                        case Keys.D9: SelectedWire ^= 256; break;
                         case Keys.Escape: 
                             SelectedTileId = null; 
-                            SelectedWireColor = 255;
+                            SelectedWire = 0;
                             SelectedTilePreview = null;
                             PastePreview = null;
                             global::TerraLogic.Tools.Select.Instance.Selection = new Rectangle();
@@ -418,10 +418,10 @@ namespace TerraLogic.Gui
                 for (int x = (int)(PanNZoom.Position.X / 16); x < Math.Min(WireArray.Width, (int)end.X); x++)
                 {
                     int wire = WireArray[x, y];
-
                     if (wire == 0) continue;
 
                     Texture2D wireSprite = Wire;
+                    bool anySelectedWireDrawn = false;
 
                     if (TileArray[x, y] is JunctionBox box)
                         switch (box.Type)
@@ -443,19 +443,30 @@ namespace TerraLogic.Gui
                         if (!GetWire(wire, id)) return;
 
                         Color c = WireColorMapping[id];
-                        if (SelectedWireColor != id)
-                            c *= 0.5f;
+
+
+
+                        if (!GetWire(SelectedWire, id))
+                        {
+                            if (SelectedWire.Bits() == 1)
+                                c *= 0.5f;
+                            else c *= 0.25f;
+                        }
+                        else 
+                        {
+                            if (SelectedWire.Bits() > 1 && anySelectedWireDrawn) c *= 0.5f;
+                            anySelectedWireDrawn = true;
+                        }
                         
                         TerraLogic.SpriteBatch.Draw(wireSprite, PanNZoom.WorldToScreen(rect), CalculateWireSpriteOffset(GetWire(wireTop, id), GetWire(wireRight, id), GetWire(wireBottom, id), GetWire(wireLeft, id)), c, 0f, Vector2.Zero, SpriteEffects.None, 0);
+                        
                     }
 
                     for (byte id = 0; id < WireColorMapping.Count; id++)
-                        if (id != SelectedWireColor) DrawWire(id);
+                        if (!GetWire(SelectedWire, id)) DrawWire(id);
 
-                    if (SelectedWireColor < WireColorMapping.Count)
-                    {
-                        DrawWire(SelectedWireColor);
-                    }
+                    for (byte id = 0; id < WireColorMapping.Count; id++)
+                        if (GetWire(SelectedWire, id)) DrawWire(id);
 
                 }
             TerraLogic.SpriteBatch.End();
@@ -648,6 +659,14 @@ namespace TerraLogic.Gui
             int mask = ~(1 << id);
             int newstate = current & mask;
             if (state) newstate |= ~mask;
+            if (newstate == current) return;
+            WireArray[x, y] = newstate;
+        }
+        internal static void SetWires(int x, int y, int wires, bool state)
+        {
+            int current = WireArray[x, y];
+            int newstate = current & ~wires;
+            if (state) newstate |= wires;
             if (newstate == current) return;
             WireArray[x, y] = newstate;
         }
