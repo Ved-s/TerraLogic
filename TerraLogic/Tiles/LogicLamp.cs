@@ -55,7 +55,7 @@ namespace TerraLogic.Tiles
             Sprite = content.Load<Texture2D>("Tiles/LogicLamp");
         }
 
-        public override void WireSignal(int wire, Point origin)
+        public override void WireSignal(int wire, Point from)
         {
             if (wire.Bits() % 2 == 1)
                 switch (State)

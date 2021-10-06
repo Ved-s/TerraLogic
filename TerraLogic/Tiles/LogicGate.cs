@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using TerraLogic.GuiElements;
 
 namespace TerraLogic.Tiles
 {
@@ -23,31 +24,48 @@ namespace TerraLogic.Tiles
 
         static Texture2D Sprite; // Of On Faulty
 
+        int RedFade = 0;
+
         protected abstract bool Compute(bool[] lamps);
 
         internal void LampStateChanged(bool[] lamps, bool hasFaulty, bool faultyTriggered)
         {
-            //Debug.Write($"Lamps: {string.Join("", lamps.Select(b => b ? "+" : "-"))}, HasFaulty: {hasFaulty}, ");
-            //if (hasFaulty) Debug.WriteLine($"FaultyTrigger: {faultyTriggered}");
-            //else Debug.WriteLine($"CurrentState: {State}");
-
             IsFaulty = hasFaulty;
             if (IsFaulty && faultyTriggered)
             {
-                if (lamps.Length > 0 && lamps[new Random().Next(0, lamps.Length)]) SendSignal();
+                if (lamps.Length > 0 && lamps[new Random().Next(0, lamps.Length)])
+                {
+                    if (!CurrentWireUpdateStack.Contains(this))
+                    {
+                        SendSignal();
+                    }
+                    else RedFade = 120;
+                }
             }
             else if (!IsFaulty)
             {
                 bool newstate = Compute(lamps);
-                if (newstate != State) SendSignal();
-                State = newstate;
+
+                if (newstate != State)
+                {
+                    State = newstate;
+                    if (!CurrentWireUpdateStack.Contains(this)) { SendSignal(); }
+                    else RedFade = 120;
+                }
             }
         }
-
         public override void Draw(Rectangle rect, bool isScreenPos = false)
         {
-            if (IsFaulty) TerraLogic.SpriteBatch.DrawTileSprite(Sprite, 2, GateId, isScreenPos ? rect : PanNZoom.WorldToScreen(rect), Color.White);
-            else TerraLogic.SpriteBatch.DrawTileSprite(Sprite, State? 1 : 0, GateId, isScreenPos ? rect : PanNZoom.WorldToScreen(rect), Color.White);
+            rect = isScreenPos ? rect : PanNZoom.WorldToScreen(rect);
+            if (IsFaulty) TerraLogic.SpriteBatch.DrawTileSprite(Sprite, 2, GateId, rect, Color.White);
+            else TerraLogic.SpriteBatch.DrawTileSprite(Sprite, State? 1 : 0, GateId, rect, Color.White);
+
+            if (RedFade > 0) 
+            {
+                Color c = Color.Red * (RedFade / 120f);
+                Graphics.DrawRectangle(TerraLogic.SpriteBatch, rect, c);
+                RedFade--;
+            }
         }
 
         public override void Update()

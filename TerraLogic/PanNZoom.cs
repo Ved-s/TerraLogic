@@ -95,6 +95,10 @@ namespace TerraLogic
         {
             return new Point((int)(p.X * f), (int)(p.Y * f));
         }
+        public static Point Multiply(this Point p, Point m)
+        {
+            return new Point((int)(p.X * m.X), (int)(p.Y * m.Y));
+        }
         public static Point Divide(this Point p, float f)
         {
             return new Point((int)(p.X / f), (int)(p.Y / f));

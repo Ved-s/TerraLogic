@@ -25,16 +25,21 @@ namespace TerraLogic.Tiles
         public abstract void Draw(Rectangle rect, bool isScreenPos = false);
         public virtual void Update() { }
 
-        public virtual void WireSignal(int wire, Point origin) { }
+        public virtual void WireSignal(int wire, Point from) { }
         public virtual void BeforeDestroy() { }
         public virtual void PlacedInWorld() { }
 
         public virtual void RightClick(bool held, bool preview) { }
 
+        internal static Stack<Tile> CurrentWireUpdateStack = new Stack<Tile>();
+
         protected void SendSignal(int wire = -1) 
         {
             if (!Created) return;
+
+            CurrentWireUpdateStack.Push(this);
             Gui.Logics.SendWireSignal(new Rectangle(Pos.X, Pos.Y, Size.X, Size.Y), wire);
+            CurrentWireUpdateStack.Pop();
         }
 
         public virtual void LoadContent(ContentManager content) { }

@@ -44,6 +44,15 @@ namespace TerraLogic
             spriteBatch.DrawString(font, text, pos, textColor);
         }
 
+        public static void DrawStringShaded(this SpriteBatch spriteBatch, SpriteFont font, string text, Vector2 pos, Color textColor, Color shadowColor, float angle)
+        {
+            spriteBatch.DrawString(font, text, pos + new Vector2(0, -1), shadowColor, angle, Vector2.Zero, 1, SpriteEffects.None, 0);
+            spriteBatch.DrawString(font, text, pos + new Vector2(-1, 0), shadowColor, angle, Vector2.Zero, 1, SpriteEffects.None, 0);
+            spriteBatch.DrawString(font, text, pos + new Vector2(0, 1), shadowColor, angle, Vector2.Zero, 1, SpriteEffects.None, 0);
+            spriteBatch.DrawString(font, text, pos + new Vector2(1, 0), shadowColor, angle, Vector2.Zero, 1, SpriteEffects.None, 0);
+            spriteBatch.DrawString(font, text, pos, textColor, angle, Vector2.Zero, 1, SpriteEffects.None, 0);
+        }
+
         public static void DrawTileSprite(this SpriteBatch spriteBatch, Texture2D sprite, int spriteX, int spriteY, Rectangle destinationRectangle, Color color, int tileWidth = 1, int tileHeight = 1)
         {
             spriteBatch.Draw(sprite, destinationRectangle, new Rectangle(spriteX * tileWidth * Gui.Logics.TileSize.X, spriteY * tileHeight * Gui.Logics.TileSize.Y, tileWidth * Gui.Logics.TileSize.X, tileHeight * Gui.Logics.TileSize.Y), color);
