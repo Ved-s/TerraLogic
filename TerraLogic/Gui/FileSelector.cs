@@ -125,7 +125,12 @@ namespace TerraLogic.Gui
                         if (AllowNonexistentFiles) 
                         {
                             caller.GetElement(".ok").Visible = caller.TextBuilder.Length > 0;
+                            if (caller.TextBuilder.Length == 0) caller.PostText = "";
+                            else if (caller.TextBuilder.Length < 3 || caller.TextBuilder.ToString(caller.TextBuilder.Length - 3, 3) != ".tl")
+                                caller.PostText = ".tl";
+                            else caller.PostText = "";
                         }
+                        else caller.PostText = "";
                     },
                     OnEnter = (caller) => 
                     {
@@ -197,22 +202,32 @@ namespace TerraLogic.Gui
             Callback = callback;
             AllowNonexistentFiles = allowNonexistentFiles;
 
-            (GetElement(".curFile") as UIInput).ReadOnly = !allowNonexistentFiles;
+            UIInput curFile = GetElement(".curFile") as UIInput;
+            curFile.ReadOnly = !allowNonexistentFiles;
+            if (allowNonexistentFiles) 
+            {
+                curFile.Text = "New Schematic";
+            }
+
         }
 
         private void UpdateItems()
         {
-            GetElement("path").Text = Path;
+            GetElement(".path").Text = Path;
 
             UIList files = GetElement("files") as UIList;
             files.Items.Clear();
             files.SelectedIndex = -1;
+
+            UIInput curFile = GetElement(".curFile") as UIInput;
+            
 
             if (Path == System.IO.Path.DirectorySeparatorChar.ToString())
             {
                 foreach (string drive in System.IO.Directory.GetLogicalDrives()) files.Items.Add(drive);
                 files.Items.Add("Current User");
                 files.Items.Add("App Directory");
+                curFile.Visible = false;
             }
             else
             {
@@ -223,7 +238,10 @@ namespace TerraLogic.Gui
                     foreach (string file in System.IO.Directory.GetFiles(Path)) files.Items.Add(System.IO.Path.GetFileName(file));
                 }
                 catch (System.IO.IOException) { }
+                curFile.Visible = true;
             }
+
+            
         }
 
         public override void Draw(SpriteBatch spriteBatch)

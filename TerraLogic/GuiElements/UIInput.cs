@@ -19,7 +19,7 @@ namespace TerraLogic.GuiElements
 
         public override string Text 
         { 
-            get => TextBuilder.ToString();
+            get => TextBuilder.ToString() + PostText;
             set { TextBuilder.Clear(); TextBuilder.Append(value); OnTextChanged?.Invoke(this); } 
         }
 
@@ -27,6 +27,9 @@ namespace TerraLogic.GuiElements
         public Action<UIInput> OnEnter;
 
         public StringBuilder TextBuilder = new StringBuilder();
+
+        public string PostText = "";
+        public Color PostTextColor = new Color(128,128,128);
 
         public UIInput(string name) : base(name) 
         {
@@ -37,13 +40,22 @@ namespace TerraLogic.GuiElements
         {
             DrawBackground(spriteBatch);
 
-            spriteBatch.DrawString(Font, Text, Bounds.Location.ToVector2(), TextColor);
+            if (CursorPos > TextBuilder.Length) CursorPos = TextBuilder.Length;
+            if (CursorPos < 0) CursorPos = 0;
+
+            string text = TextBuilder.ToString();
+            int width = (int)Font.MeasureString(text).X;
+
+            spriteBatch.DrawString(Font, text, Bounds.Location.ToVector2(), TextColor);
+            spriteBatch.DrawString(Font, PostText, new Vector2(Bounds.X + width, Bounds.Y), PostTextColor);
 
             if (!ReadOnly)
             {
                 int curPos = (int)Font.MeasureString(TextBuilder.ToString(0, CursorPos)).X;
                 spriteBatch.Draw(TerraLogic.Pixel, new Rectangle(curPos + Bounds.X, Bounds.Y, 1, Bounds.Height), Color.White);
             }
+
+            
         }
 
         protected internal override void MouseKeyStateUpdate(MouseKeys key, EventType @event, Point pos)

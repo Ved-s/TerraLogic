@@ -633,7 +633,7 @@ namespace TerraLogic.Gui
                 int nextWire = WireArray[pos.X, pos.Y] & w.Wire;
                 if (nextWire > 0)
                 {
-                    if (TileArray[pos.X, pos.Y] is JunctionBox topBox)
+                    while (TileArray[pos.X, pos.Y] is JunctionBox topBox)
                         switch (topBox.Type)
                         {
                             case JunctionBox.JunctionType.Cross: pos.Y--; break;
@@ -651,7 +651,7 @@ namespace TerraLogic.Gui
 
                 if (nextWire > 0)
                 {
-                    if (TileArray[pos.X, pos.Y] is JunctionBox rightBox)
+                    while (TileArray[pos.X, pos.Y] is JunctionBox rightBox)
                         switch (rightBox.Type)
                         {
                             case JunctionBox.JunctionType.Cross: pos.X++; break;
@@ -668,7 +668,7 @@ namespace TerraLogic.Gui
                 nextWire = WireArray[pos.X, pos.Y] & w.Wire;
                 if (nextWire > 0)
                 {
-                    if (TileArray[pos.X, pos.Y] is JunctionBox bottomBox)
+                    while (TileArray[pos.X, pos.Y] is JunctionBox bottomBox)
                         switch (bottomBox.Type)
                         {
                             case JunctionBox.JunctionType.Cross: pos.Y++; break;
@@ -680,12 +680,11 @@ namespace TerraLogic.Gui
                     WiresToSignal.Push(w.NewPos(pos, nextWire));
                 }
 
-
                 pos = new Point(w.X - 1, w.Y); // left
                 nextWire = WireArray[pos.X, pos.Y] & w.Wire;
                 if (nextWire > 0)
                 {
-                    if (TileArray[pos.X, pos.Y] is JunctionBox leftBox)
+                    while (TileArray[pos.X, pos.Y] is JunctionBox leftBox)
                         switch (leftBox.Type)
                         {
                             case JunctionBox.JunctionType.Cross: pos.X--; break;
