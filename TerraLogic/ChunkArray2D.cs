@@ -158,6 +158,8 @@ namespace TerraLogic
             return true;
 
         }
+
+        public void Clear() { ChunkMap = new int[0, 0][,]; }
     }
 
     public class ChunkArray2D<T>
@@ -223,6 +225,11 @@ namespace TerraLogic
             original = null;
             GC.Collect();
             return newArray;
+        }
+
+        internal void Clear()
+        {
+            ChunkMap = new T[0, 0][,];
         }
     }
 }

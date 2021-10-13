@@ -76,6 +76,8 @@ namespace TerraLogic.Gui
 
         public static Point TileSize = new Point(16, 16);
 
+        public static Rectangle ViewBounds;
+
         static Stack<WireSignal> WiresToSignal = new Stack<WireSignal>();
 
         internal static void LoadTileContent(ContentManager content)
@@ -174,7 +176,7 @@ namespace TerraLogic.Gui
 
             ClipboardUtils.Text = WireArray.ToPartialDataString(selection) + tileBuilder.ToString();
         }
-        internal static void LoadFromClipboard() 
+        internal static void LoadFromClipboard()
         {
             string[] data = ClipboardUtils.Text.Split(new char[] { ';' }, 2);
             if (data.Length != 2) return;
@@ -194,11 +196,11 @@ namespace TerraLogic.Gui
 
                 if (TileMap.TryGetValue(tileData[0], out Tile newTile))
                 {
-                    tiles[x,y] = newTile.CreateTile(tileData.Length == 1 ? null : tileData[1], false);
+                    tiles[x, y] = newTile.CreateTile(tileData.Length == 1 ? null : tileData[1], false);
                 }
             }
 
-            if (SelectedToolId != -1) Tools[SelectedToolId].Deselected();
+            if (SelectedToolId != -1) Tools[SelectedToolId].IsSelected = false;
             SelectedToolId = -1;
             SelectedTileId = null;
             SelectedTilePreview = null;
@@ -214,7 +216,7 @@ namespace TerraLogic.Gui
             DrawTiles();
             if (SelectedWire > 0
                 || SelectedTileId != null
-                || (SelectedToolId > -1 && Tools[SelectedToolId].ShowWires)) DrawWires();
+                || (SelectedToolId > -1 && Tools[SelectedToolId].ShowWires)) DrawWires(WireArray, BlendState.AlphaBlend);
             DrawTilePreview();
 
             for (int i = 0; i < Tools.Count; i++) Tools[i].Draw(spriteBatch, SelectedToolId == i);
@@ -228,7 +230,6 @@ namespace TerraLogic.Gui
         {
             WireUpdateWatch.Reset();
             base.Update();
-
             if (SelectedToolId > -1) Tools[SelectedToolId].Update();
 
             for (int y = 0; y < TileArray.Height; y++)
@@ -242,10 +243,15 @@ namespace TerraLogic.Gui
 
             WireDebug.RemoveAll(wd => wd.Fade <= 0);
 
-            foreach (WireDebug wd in WireDebug) 
+            foreach (WireDebug wd in WireDebug)
             {
                 wd.Fade--;
             }
+
+            ViewBounds.X = (int)(PanNZoom.Position.X / TileSize.X);
+            ViewBounds.Y = (int)(PanNZoom.Position.Y / TileSize.Y);
+            ViewBounds.Width = (int)(TerraLogic.Instance.Window.ClientBounds.Width / (PanNZoom.Zoom * TileSize.X)) + 1;
+            ViewBounds.Height = (int)(TerraLogic.Instance.Window.ClientBounds.Height / (PanNZoom.Zoom * TileSize.Y)) + 1;
         }
 
         protected internal override void MouseKeyStateUpdate(MouseKeys key, EventType @event, Point pos)
@@ -263,13 +269,13 @@ namespace TerraLogic.Gui
                         string data = SelectedTilePreview.GetData();
                         SetTile(worldpos, SelectedTilePreview.Id + (data is null ? "" : ":" + data));
                     }
-                    else if (SelectedWire > 0)
+                    else if (SelectedWire > 0 && SelectedToolId == -1)
                         SetWires(worldpos.X, worldpos.Y, SelectedWire, true);
                 }
-                if (@event == EventType.Presssed) 
+                if (@event == EventType.Presssed)
                 {
                     Rectangle selection = global::TerraLogic.Tools.Select.Instance.Selection;
-                    if (selection.Contains(worldpos)) 
+                    if (selection.Contains(worldpos))
                     {
                         if (SelectedTileId != null)
                         {
@@ -280,7 +286,7 @@ namespace TerraLogic.Gui
                                 for (int x = selection.X; x < selection.Right; x++)
                                     SetTile(x, y, data);
                         }
-                        else if (SelectedWire > 0) 
+                        else if (SelectedWire > 0)
                         {
                             for (int y = selection.Y; y < selection.Bottom; y++)
                                 for (int x = selection.X; x < selection.Right; x++)
@@ -288,7 +294,7 @@ namespace TerraLogic.Gui
                         }
                     }
 
-                    if (PastePreview is not null) 
+                    if (PastePreview is not null)
                     {
                         WireArray.LoadPartialDataString(PastePreview.WireData, worldpos, true);
                         for (int y = 0; y < PastePreview.Size.Y; y++)
@@ -296,7 +302,7 @@ namespace TerraLogic.Gui
                                 if (PastePreview.Tiles[x, y] is not null)
                                 {
                                     string data = PastePreview.Tiles[x, y].GetData();
-                                    SetTile(worldpos.X + x, worldpos.Y + y, PastePreview.Tiles[x, y].Id + (data is null? "" : ":" + data));
+                                    SetTile(worldpos.X + x, worldpos.Y + y, PastePreview.Tiles[x, y].Id + (data is null ? "" : ":" + data));
                                 }
 
                     }
@@ -306,7 +312,7 @@ namespace TerraLogic.Gui
             {
                 if (@event == EventType.Presssed)
                 {
-                    if (SelectedToolId != -1) Tools[SelectedToolId].Deselected();
+                    if (SelectedToolId != -1) Tools[SelectedToolId].IsSelected = false;
                     SelectedTileId = null;
                     SelectedTilePreview = null;
                     SelectedToolId = -1;
@@ -327,7 +333,7 @@ namespace TerraLogic.Gui
                 if (@event == EventType.Hold)
                 {
 
-                    if (SelectedWire > 0)
+                    if (SelectedWire > 0 && SelectedToolId == -1)
                         SetWires(worldpos.X, worldpos.Y, SelectedWire, false);
 
                 }
@@ -351,8 +357,11 @@ namespace TerraLogic.Gui
                         case Keys.D7: SelectedWire ^= 64; break;
                         case Keys.D8: SelectedWire ^= 128; break;
                         case Keys.D9: SelectedWire ^= 256; break;
-                        case Keys.Escape: 
-                            SelectedTileId = null; 
+                        case Keys.Escape:
+                            if (SelectedToolId != -1) Tools[SelectedToolId].IsSelected = false;
+                            SelectedToolId = -1;
+
+                            SelectedTileId = null;
                             SelectedWire = 0;
                             SelectedTilePreview = null;
                             PastePreview = null;
@@ -385,7 +394,7 @@ namespace TerraLogic.Gui
             PanNZoom.SetZoom(zoom, pos);
         }
 
-        private void DrawWireDebug()
+        private static void DrawWireDebug()
         {
             if (!WireDebugActive) return;
 
@@ -393,14 +402,14 @@ namespace TerraLogic.Gui
 
             TerraLogic.SpriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend);
 
-            Point textSize = Font.MeasureString(DebugText).ToPoint();
-            TerraLogic.SpriteBatch.DrawStringShaded(Font, DebugText, new Vector2(Bounds.X, Bounds.Height - textSize.Y), Color.White, Color.Black);
+            Point textSize = Instance.Font.MeasureString(DebugText).ToPoint();
+            TerraLogic.SpriteBatch.DrawStringShaded(Instance.Font, DebugText, new Vector2(Instance.Bounds.X, Instance.Bounds.Height - textSize.Y), Color.White, Color.Black);
 
-            Vector2 end = PanNZoom.ScreenToWorld(new Point(Bounds.Right, Bounds.Bottom)) / new Vector2(16, 16);
+            Vector2 end = PanNZoom.ScreenToWorld(new Point(Instance.Bounds.Right, Instance.Bounds.Bottom)) / new Vector2(16, 16);
             Rectangle drawArea = new Rectangle((int)(PanNZoom.Position.X / 16), (int)(PanNZoom.Position.Y / 16),
                 (int)end.X + 1, (int)end.Y + 1);
 
-            foreach (WireDebug wd in WireDebug) 
+            foreach (WireDebug wd in WireDebug)
             {
                 Point originCenter = wd.Signal.Origin.Multiply(TileSize);
                 originCenter.X += TileSize.X / 2;
@@ -412,21 +421,21 @@ namespace TerraLogic.Gui
                     c *= (wd.Fade / 300f);
 
                     Graphics.DrawRectangle(TerraLogic.SpriteBatch, PanNZoom.WorldToScreen(new Rectangle(wd.Signal.Origin.X * TileSize.X, wd.Signal.Origin.Y * TileSize.Y, TileSize.X, TileSize.Y)), c);
-                    Graphics.DrawLineWithText(TerraLogic.SpriteBatch, 
-                        PanNZoom.WorldToScreen(originCenter.ToVector2()), 
+                    Graphics.DrawLineWithText(TerraLogic.SpriteBatch,
+                        PanNZoom.WorldToScreen(originCenter.ToVector2()),
                         PanNZoom.WorldToScreen(new Vector2((wd.Signal.X * TileSize.X) + (TileSize.X / 2), (wd.Signal.Y * TileSize.Y) + (TileSize.Y / 2))),
-                        Font, wd.Count.ToString(), c);
+                        Instance.Font, wd.Count.ToString(), c);
                 }
             }
             TerraLogic.SpriteBatch.End();
 
         }
-        private void DrawTilePreview()
+        private static void DrawTilePreview()
         {
-            if (!Hover) return;
+            if (!Instance.Hover) return;
             if (SelectedTilePreview is null && SelectedToolId == -1 && PastePreview is null) return;
 
-            Point wp = (PanNZoom.ScreenToWorld(MousePosition) / TileSize.ToVector2()).ToPoint();
+            Point wp = (PanNZoom.ScreenToWorld(Instance.MousePosition) / TileSize.ToVector2()).ToPoint();
 
             TerraLogic.SpriteBatch.Begin(SpriteSortMode.Deferred, null, PanNZoom.Zoom > 1 ? SamplerState.PointWrap : SamplerState.LinearWrap, null, null);
 
@@ -443,16 +452,16 @@ namespace TerraLogic.Gui
                         }
             }
 
-            else if (SelectedToolId != -1)
+            else if (SelectedToolId != -1 && Tools[SelectedToolId].DrawMouseIcon)
                 TerraLogic.SpriteBatch.Draw(Tools[SelectedToolId].Texture, PanNZoom.WorldToScreen(new Rectangle(wp.X * 16, wp.Y * 16, 16, 16)), Color.White);
 
             else if (SelectedTilePreview != null && CanSetTile(wp.X, wp.Y, SelectedTilePreview))
                 SelectedTilePreview.Draw(new Rectangle(wp.X, wp.Y, SelectedTilePreview.Size.X, SelectedTilePreview.Size.Y).Mul(TileSize));
             TerraLogic.SpriteBatch.End();
         }
-        private void DrawWires()
+        public static void DrawWires(ChunkArray2D wires, BlendState blendState)
         {
-            TerraLogic.SpriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, PanNZoom.Zoom > 1 ? SamplerState.PointWrap : SamplerState.LinearWrap, null, null);
+            TerraLogic.SpriteBatch.Begin(SpriteSortMode.Deferred, blendState, PanNZoom.Zoom > 1 ? SamplerState.PointWrap : SamplerState.LinearWrap, null, null);
 
             int wireTop;
             int wireLeft;
@@ -461,12 +470,10 @@ namespace TerraLogic.Gui
 
             Rectangle rect;
 
-            Vector2 end = (PanNZoom.ScreenToWorld(new Point(Bounds.Right, Bounds.Bottom).Add(new Point(16, 16))) / TileSize.ToVector2());
-
-            for (int y = (int)(PanNZoom.Position.Y / 16); y < Math.Min(WireArray.Height, (int)end.Y); y++)
-                for (int x = (int)(PanNZoom.Position.X / 16); x < Math.Min(WireArray.Width, (int)end.X); x++)
+            for (int y = ViewBounds.Top; y < Math.Min(wires.Height, ViewBounds.Bottom); y++)
+                for (int x = ViewBounds.Left; x < Math.Min(wires.Width, ViewBounds.Right); x++)
                 {
-                    int wire = WireArray[x, y];
+                    int wire = wires[x, y];
                     if (wire == 0) continue;
 
                     Texture2D wireSprite = Wire;
@@ -480,10 +487,10 @@ namespace TerraLogic.Gui
                             case JunctionBox.JunctionType.TR: wireSprite = WireTR; break;
                         }
 
-                    wireTop = WireArray[x, y - 1];
-                    wireLeft = WireArray[x - 1, y];
-                    wireBottom = WireArray[x, y + 1];
-                    wireRight = WireArray[x + 1, y];
+                    wireTop = wires[x, y - 1];
+                    wireLeft = wires[x - 1, y];
+                    wireBottom = wires[x, y + 1];
+                    wireRight = wires[x + 1, y];
 
                     rect = new Rectangle(x * TileSize.X, y * TileSize.Y, TileSize.X, TileSize.Y);
 
@@ -501,14 +508,14 @@ namespace TerraLogic.Gui
                                 c *= 0.5f;
                             else c *= 0.25f;
                         }
-                        else 
+                        else
                         {
                             if (SelectedWire.Bits() > 1 && anySelectedWireDrawn) c *= 0.5f;
                             anySelectedWireDrawn = true;
                         }
-                        
+
                         TerraLogic.SpriteBatch.Draw(wireSprite, PanNZoom.WorldToScreen(rect), CalculateWireSpriteOffset(GetWire(wireTop, id), GetWire(wireRight, id), GetWire(wireBottom, id), GetWire(wireLeft, id)), c, 0f, Vector2.Zero, SpriteEffects.None, 0);
-                        
+
                     }
 
                     for (byte id = 0; id < WireColorMapping.Count; id++)
@@ -520,16 +527,11 @@ namespace TerraLogic.Gui
                 }
             TerraLogic.SpriteBatch.End();
         }
-        private void DrawTiles()
+        private static void DrawTiles()
         {
             TerraLogic.SpriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, PanNZoom.Zoom > 1 ? SamplerState.PointWrap : SamplerState.LinearWrap, null, null);
-
-            Vector2 end = PanNZoom.ScreenToWorld(new Point(Bounds.Right, Bounds.Bottom)) / new Vector2(16, 16);
-
-            end += new Vector2(1, 1);
-
-            for (int y = (int)(PanNZoom.Position.Y / 16); y < Math.Min(TileArray.Height, (int)end.Y); y++)
-                for (int x = (int)(PanNZoom.Position.X / 16); x < Math.Min(TileArray.Width, (int)end.X); x++)
+            for (int y = ViewBounds.Top; y < Math.Min(TileArray.Height, ViewBounds.Bottom); y++)
+                for (int x = ViewBounds.Left; x < Math.Min(TileArray.Width, ViewBounds.Right); x++)
                 {
                     Tile t = TileArray[x, y];
                     if (t is null || t.Pos.X != x || t.Pos.Y != y) continue;
@@ -537,9 +539,9 @@ namespace TerraLogic.Gui
                 }
             TerraLogic.SpriteBatch.End();
         }
-        private void DrawGrid()
+        private static void DrawGrid()
         {
-            Rectangle rect = Bounds;
+            Rectangle rect = Instance.Bounds;
             Vector2 v2 = Vector2.Zero;
 
             int zmul = 1;
@@ -581,7 +583,7 @@ namespace TerraLogic.Gui
         public static void SendWireSignal(Rectangle rect, int wire)
         {
             WireUpdateWatch.Start();
-            
+
             int updateId = Rnd.Next();
 
             HashSet<LogicGate> gatesToUpdate = new HashSet<LogicGate>();
@@ -702,14 +704,116 @@ namespace TerraLogic.Gui
             WireUpdateWatch.Stop();
 
         }
+        public static WireSignal[] TrackWire(Point pos, int wire) => TrackWire(new Point[] { pos }, wire);
+        public static WireSignal[] TrackWire(Point[] points, int wire)
+        {
+            int trackId = Rnd.Next();
 
-        internal static void AddDebug(WireSignal signal) 
+            Stack<WireSignal> WiresToTrack = new Stack<WireSignal>();
+            List<WireSignal> TrackedPoints = new List<WireSignal>();
+
+            foreach (Point p in points)
+            {
+                int thiswire = WireArray[p.X, p.Y] & wire;
+                if (thiswire == 0) continue;
+                WiresToTrack.Push(new WireSignal(p.X, p.Y, thiswire));
+            }
+
+
+            while (WiresToTrack.Count > 0)
+            {
+                WireSignal w = WiresToTrack.Pop();
+
+                long fullUpdate = WireUpdateArray[w.X, w.Y];
+
+                if (fullUpdate >> 32 == trackId)
+                {
+                    w.Wire = (int)((fullUpdate & 0xffffffff) ^ w.Wire) & w.Wire;
+                    if (w.Wire == 0) continue;
+                    WireUpdateArray[w.X, w.Y] = fullUpdate | (uint)w.Wire;
+                }
+                else WireUpdateArray[w.X, w.Y] = ((long)trackId << 32) | (uint)w.Wire;
+                TrackedPoints.Add(w);
+
+
+                Point pos = new Point(w.X, w.Y - 1); // top
+                int nextWire = WireArray[pos.X, pos.Y] & w.Wire;
+                if (nextWire > 0)
+                {
+                    while (TileArray[pos.X, pos.Y] is JunctionBox topBox)
+                        switch (topBox.Type)
+                        {
+                            case JunctionBox.JunctionType.Cross: pos.Y--; break;
+                            case JunctionBox.JunctionType.TL: pos.X++; break;
+                            case JunctionBox.JunctionType.TR: pos.X--; break;
+                        }
+
+                    nextWire = WireArray[pos.X, pos.Y] & w.Wire;
+                    WiresToTrack.Push(w.NewPos(pos, nextWire));
+                }
+
+
+                pos = new Point(w.X + 1, w.Y); // right
+                nextWire = WireArray[pos.X, pos.Y] & w.Wire;
+
+                if (nextWire > 0)
+                {
+                    while (TileArray[pos.X, pos.Y] is JunctionBox rightBox)
+                        switch (rightBox.Type)
+                        {
+                            case JunctionBox.JunctionType.Cross: pos.X++; break;
+                            case JunctionBox.JunctionType.TL: pos.Y--; break;
+                            case JunctionBox.JunctionType.TR: pos.Y++; break;
+                        }
+
+                    nextWire = WireArray[pos.X, pos.Y] & nextWire;
+                    WiresToTrack.Push(w.NewPos(pos, nextWire));
+                }
+
+
+                pos = new Point(w.X, w.Y + 1); // bottom
+                nextWire = WireArray[pos.X, pos.Y] & w.Wire;
+                if (nextWire > 0)
+                {
+                    while (TileArray[pos.X, pos.Y] is JunctionBox bottomBox)
+                        switch (bottomBox.Type)
+                        {
+                            case JunctionBox.JunctionType.Cross: pos.Y++; break;
+                            case JunctionBox.JunctionType.TL: pos.X--; break;
+                            case JunctionBox.JunctionType.TR: pos.X++; break;
+                        }
+
+                    nextWire = WireArray[pos.X, pos.Y] & nextWire;
+                    WiresToTrack.Push(w.NewPos(pos, nextWire));
+                }
+
+                pos = new Point(w.X - 1, w.Y); // left
+                nextWire = WireArray[pos.X, pos.Y] & w.Wire;
+                if (nextWire > 0)
+                {
+                    while (TileArray[pos.X, pos.Y] is JunctionBox leftBox)
+                        switch (leftBox.Type)
+                        {
+                            case JunctionBox.JunctionType.Cross: pos.X--; break;
+                            case JunctionBox.JunctionType.TL: pos.Y++; break;
+                            case JunctionBox.JunctionType.TR: pos.Y--; break;
+                        }
+
+                    nextWire = WireArray[pos.X, pos.Y] & nextWire;
+                    WiresToTrack.Push(w.NewPos(pos, nextWire));
+                }
+            }
+
+            return TrackedPoints.ToArray();
+        }
+
+        internal static void AddDebug(WireSignal signal)
         {
             if (!WireDebugActive) return;
 
             foreach (WireDebug debug in WireDebug)
-                if (debug.Signal.Origin == signal.Origin 
-                    && debug.Signal.X == signal.X 
+                if (debug.Signal.Origin == signal.Origin
+                    && debug.Signal.X == signal.X
                     && debug.Signal.Y == signal.Y)
                 {
                     debug.Signal.Wire |= signal.Wire;
@@ -745,14 +849,14 @@ namespace TerraLogic.Gui
             return ((wire >> id) & 1) != 0;
         }
 
-        internal static Color GetWireColor(int wire) 
+        internal static Color GetWireColor(int wire)
         {
             if (wire == 0) return Color.Transparent;
 
             int count = 0;
             int r = 0, g = 0, b = 0;
 
-            for (int i = 0; i < 32; i++) 
+            for (int i = 0; i < 32; i++)
             {
                 if ((wire & 1) == 1)
                 {
@@ -814,7 +918,7 @@ namespace TerraLogic.Gui
 
     }
 
-    struct WireSignal
+    public struct WireSignal
     {
         public Point Origin;
         public int X, Y;
@@ -840,20 +944,20 @@ namespace TerraLogic.Gui
 
         public bool IsAtOrigin { get => X == Origin.X && Y == Origin.Y; }
     }
-    class WireDebug 
+    class WireDebug
     {
         public WireSignal Signal;
         public int Count;
         public int Fade;
 
-        public WireDebug(WireSignal signal) 
+        public WireDebug(WireSignal signal)
         {
             Signal = signal;
             Count = 1;
             Fade = 300;
         }
 
-        public void Add() 
+        public void Add()
         {
             Count++;
             Fade = 300;
@@ -861,7 +965,7 @@ namespace TerraLogic.Gui
     }
 
 
-    class PastePreview 
+    class PastePreview
     {
         internal string WireData;
         internal Point Size;

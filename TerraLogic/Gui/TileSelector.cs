@@ -57,7 +57,7 @@ namespace TerraLogic.Gui
         {
             if (key == MouseKeys.Left && @event == EventType.Presssed && CurrentlyHoveredId != null)
             {
-                if (Logics.SelectedToolId != -1) Logics.Tools[Logics.SelectedToolId].Deselected();
+                if (Logics.SelectedToolId != -1) Logics.Tools[Logics.SelectedToolId].IsSelected = false;
                 Logics.SelectedToolId = -1;
                 Logics.SelectedTileId = CurrentlyHoveredId;
                 Logics.SelectedTilePreview = CurrentlyHoveredTile;
@@ -119,13 +119,17 @@ namespace TerraLogic.Gui
             {
                 if (Logics.SelectedToolId != CurrentlyHoveredId) 
                 {
-                    if (Logics.SelectedToolId != -1) Logics.Tools[Logics.SelectedToolId].Deselected();
+                    if (Logics.SelectedToolId != -1) Logics.Tools[Logics.SelectedToolId].IsSelected = false;
                     Logics.SelectedToolId = CurrentlyHoveredId;
                     Logics.SelectedTileId = null;
                     Logics.SelectedTilePreview = null;
-                    Logics.SelectedWire = 0;
                     Logics.PastePreview = null;
-                    if (CurrentlyHoveredId != -1) Logics.Tools[CurrentlyHoveredId].Selected();
+                    if (CurrentlyHoveredId != -1)
+                    {
+                        Logics.Tools[CurrentlyHoveredId].IsSelected = true;
+                        if (!Logics.Tools[Logics.SelectedToolId].AllowWireSelection) 
+                            Logics.SelectedWire = 0;
+                    }
                 }
             }
         }

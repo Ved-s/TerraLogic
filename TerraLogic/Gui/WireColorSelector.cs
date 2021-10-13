@@ -93,12 +93,19 @@ namespace TerraLogic.Gui
                 }
                 else
                 {
-                    if (Logics.SelectedToolId != -1) Logics.Tools[Logics.SelectedToolId].Deselected();
-
                     Logics.SelectedWire ^= (1 << newColor);
                     Logics.SelectedTileId = null;
                     Logics.SelectedTilePreview = null;
-                    Logics.SelectedToolId = -1;
+                    if (Logics.SelectedToolId != -1)
+                    {
+                        if (!Logics.Tools[Logics.SelectedToolId].AllowWireSelection)
+                        {
+                            Logics.Tools[Logics.SelectedToolId].IsSelected = false;
+                            Logics.SelectedToolId = -1;
+                        }
+                        else Logics.Tools[Logics.SelectedToolId].WireColorChanged();
+                    }
+
                     Logics.PastePreview = null;
                 }
             }

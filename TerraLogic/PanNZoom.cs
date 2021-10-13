@@ -111,6 +111,10 @@ namespace TerraLogic
         {
             return new Point((int)(p.X + v.X), (int)(p.Y + v.Y));
         }
+        public static Point Add(this Point p, int x, int y)
+        {
+            return new Point((int)(p.X + x), (int)(p.Y + y));
+        }
         public static Vector2 ToVector2(this Point p) 
         {
             return new Vector2(p.X, p.Y);

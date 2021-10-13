@@ -9,7 +9,7 @@ namespace TerraLogic.GuiElements
 {
     static class Graphics
     {
-        struct Angle 
+        public struct Angle 
         {
             public float Radians { get; set; }
             public float Degrees 
@@ -25,7 +25,7 @@ namespace TerraLogic.GuiElements
             public static Angle operator -(Angle a, Angle b) => new Angle() { Radians = a.Radians - b.Radians };
         }
 
-        struct Vector 
+        public struct Vector 
         {
             public float X { get; set; }
             public float Y{ get; set; }
@@ -76,7 +76,7 @@ namespace TerraLogic.GuiElements
             public static Vector operator +(Vector a, Point b) => new Vector(a.X + b.X, a.Y + b.Y);
             public static Vector operator -(Vector a, Point b) => new Vector(a.X - b.X, a.Y - b.Y);
 
-            public static implicit operator Vector(Vector2 v) => new Vector(v);
+            public static implicit operator Vector(Vector2 v) => new Vector(v.X, v.Y);
             public static implicit operator Vector2(Vector v) => new Vector2(v.X, v.Y);
 
             public Vector2 ToVector2() => new Vector2(X, Y);
