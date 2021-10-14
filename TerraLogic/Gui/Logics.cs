@@ -78,7 +78,7 @@ namespace TerraLogic.Gui
 
         public static Rectangle ViewBounds;
 
-        static Stack<WireSignal> WiresToSignal = new Stack<WireSignal>();
+        static string InfoText = "";
 
         internal static void LoadTileContent(ContentManager content)
         {
@@ -211,19 +211,26 @@ namespace TerraLogic.Gui
 
         public override void Draw(SpriteBatch spriteBatch)
         {
+            InfoText = $"Mouse pos: {(PanNZoom.ScreenToWorld(MousePosition) / TileSize.ToVector2()).ToPoint()}";
             TerraLogic.SpriteBatch.End();
             DrawGrid();
             DrawTiles();
             if (SelectedWire > 0
                 || SelectedTileId != null
-                || (SelectedToolId > -1 && Tools[SelectedToolId].ShowWires)) DrawWires(WireArray, BlendState.AlphaBlend);
+                || (SelectedToolId > -1 && Tools[SelectedToolId].ShowWires))
+                DrawWires(WireArray, BlendState.AlphaBlend);
             DrawTilePreview();
 
-            for (int i = 0; i < Tools.Count; i++) Tools[i].Draw(spriteBatch, SelectedToolId == i);
+            for (int i = 0; i < Tools.Count; i++) 
+                Tools[i].Draw(spriteBatch, SelectedToolId == i);
+            
 
             DrawWireDebug();
-
+            
             TerraLogic.SpriteBatch.Begin();
+            Point textSize = Instance.Font.MeasureString(InfoText).ToPoint();
+            TerraLogic.SpriteBatch.DrawStringShaded(Instance.Font, InfoText, new Vector2(Instance.Bounds.X, Instance.Bounds.Height - textSize.Y), Color.White, Color.Black);
+
         }
 
         public override void Update()
@@ -232,13 +239,12 @@ namespace TerraLogic.Gui
             base.Update();
             if (SelectedToolId > -1) Tools[SelectedToolId].Update();
 
-            for (int y = 0; y < TileArray.Height; y++)
-                for (int x = 0; x < TileArray.Width; x++)
+            foreach (ChunkArray2D<Tile>.ChunkItem tile in TileArray)
                 {
-                    Tile t = TileArray[x, y];
-                    if (t is null || (!t.NeedsUpdate && !t.NeedsContinuousUpdate) || t.Pos.X != x || t.Pos.Y != y) continue;
-                    t.Update();
-                    if (!t.NeedsContinuousUpdate) t.NeedsUpdate = false;
+                    if (tile.Item is null || (!tile.Item.NeedsUpdate && !tile.Item.NeedsContinuousUpdate) 
+                    || tile.Item.Pos.X != tile.X || tile.Item.Pos.Y != tile.Y) continue;
+                    tile.Item.Update();
+                    if (!tile.Item.NeedsContinuousUpdate) tile.Item.NeedsUpdate = false;
                 }
 
             WireDebug.RemoveAll(wd => wd.Fade <= 0);
@@ -398,12 +404,9 @@ namespace TerraLogic.Gui
         {
             if (!WireDebugActive) return;
 
-            string DebugText = $"Wire debug active ({WireDebug.Count} entries)";
+            InfoText += $"\nWire debug active ({WireDebug.Count} entries)";
 
             TerraLogic.SpriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend);
-
-            Point textSize = Instance.Font.MeasureString(DebugText).ToPoint();
-            TerraLogic.SpriteBatch.DrawStringShaded(Instance.Font, DebugText, new Vector2(Instance.Bounds.X, Instance.Bounds.Height - textSize.Y), Color.White, Color.Black);
 
             Vector2 end = PanNZoom.ScreenToWorld(new Point(Instance.Bounds.Right, Instance.Bounds.Bottom)) / new Vector2(16, 16);
             Rectangle drawArea = new Rectangle((int)(PanNZoom.Position.X / 16), (int)(PanNZoom.Position.Y / 16),
@@ -470,10 +473,13 @@ namespace TerraLogic.Gui
 
             Rectangle rect;
 
-            for (int y = ViewBounds.Top; y < Math.Min(wires.Height, ViewBounds.Bottom); y++)
-                for (int x = ViewBounds.Left; x < Math.Min(wires.Width, ViewBounds.Right); x++)
+            foreach (ChunkArray2D.ChunkItem chunkWire in wires)
+                if (ViewBounds.Contains(chunkWire.X, chunkWire.Y))
                 {
-                    int wire = wires[x, y];
+                    int x = chunkWire.X;
+                    int y = chunkWire.Y;
+
+                    int wire = chunkWire.Item;
                     if (wire == 0) continue;
 
                     Texture2D wireSprite = Wire;
@@ -530,12 +536,10 @@ namespace TerraLogic.Gui
         private static void DrawTiles()
         {
             TerraLogic.SpriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, PanNZoom.Zoom > 1 ? SamplerState.PointWrap : SamplerState.LinearWrap, null, null);
-            for (int y = ViewBounds.Top; y < Math.Min(TileArray.Height, ViewBounds.Bottom); y++)
-                for (int x = ViewBounds.Left; x < Math.Min(TileArray.Width, ViewBounds.Right); x++)
+            foreach (ChunkArray2D<Tile>.ChunkItem t in TileArray)
                 {
-                    Tile t = TileArray[x, y];
-                    if (t is null || t.Pos.X != x || t.Pos.Y != y) continue;
-                    t.Draw(new Rectangle(x * 16, y * 16, t.Size.X * 16, t.Size.Y * 16));
+                    if (t.Item is null || t.Item.Pos.X != t.X || t.Item.Pos.Y != t.Y) continue;
+                    t.Item.Draw(new Rectangle(t.X * 16, t.Y * 16, t.Item.Size.X * 16, t.Item.Size.Y * 16));
                 }
             TerraLogic.SpriteBatch.End();
         }
@@ -576,38 +580,26 @@ namespace TerraLogic.Gui
             return new Rectangle((int)pos.X, (int)pos.Y, (int)TileSize.X, (int)TileSize.Y);
         }
 
-        public static void SendWireSignal(Point pos, int wire)
+        public static void SignalWire(Point pos, int wire)
         {
-            SendWireSignal(new Rectangle(pos.X, pos.Y, 1, 1), wire);
+            SignalWire(new Rectangle(pos.X, pos.Y, 1, 1), wire);
         }
-        public static void SendWireSignal(Rectangle rect, int wire)
+        public static void SignalWire(Rectangle rect, int wire)
         {
             WireUpdateWatch.Start();
 
-            int updateId = Rnd.Next();
-
             HashSet<LogicGate> gatesToUpdate = new HashSet<LogicGate>();
+
+            List<Point> points = new List<Point>();
 
             for (int y = rect.Y; y < rect.Bottom; y++)
                 for (int x = rect.X; x < rect.Right; x++)
                 {
-                    WiresToSignal.Push(new WireSignal(x, y, WireArray[x, y] & wire));
+                    points.Add(new Point(x, y));
                 }
 
-            while (WiresToSignal.Count > 0)
+            foreach (WireSignal w in TrackWire(points.ToArray(), wire))
             {
-                WireSignal w = WiresToSignal.Pop();
-
-                long fullUpdate = WireUpdateArray[w.X, w.Y];
-
-                if (fullUpdate >> 32 == updateId)
-                {
-                    w.Wire = (int)((fullUpdate & 0xffffffff) ^ w.Wire) & w.Wire;
-                    if (w.Wire == 0) continue;
-                    WireUpdateArray[w.X, w.Y] = fullUpdate | (uint)w.Wire;
-                }
-                else WireUpdateArray[w.X, w.Y] = ((long)updateId << 32) | (uint)w.Wire;
-
                 if (!w.IsAtOrigin)
                 {
                     Tile t = TileArray[w.X, w.Y];
@@ -629,73 +621,6 @@ namespace TerraLogic.Gui
                             }
                         }
                     }
-                }
-
-                Point pos = new Point(w.X, w.Y - 1); // top
-                int nextWire = WireArray[pos.X, pos.Y] & w.Wire;
-                if (nextWire > 0)
-                {
-                    while (TileArray[pos.X, pos.Y] is JunctionBox topBox)
-                        switch (topBox.Type)
-                        {
-                            case JunctionBox.JunctionType.Cross: pos.Y--; break;
-                            case JunctionBox.JunctionType.TL: pos.X++; break;
-                            case JunctionBox.JunctionType.TR: pos.X--; break;
-                        }
-
-                    nextWire = WireArray[pos.X, pos.Y] & w.Wire;
-                    WiresToSignal.Push(w.NewPos(pos, nextWire));
-                }
-
-
-                pos = new Point(w.X + 1, w.Y); // right
-                nextWire = WireArray[pos.X, pos.Y] & w.Wire;
-
-                if (nextWire > 0)
-                {
-                    while (TileArray[pos.X, pos.Y] is JunctionBox rightBox)
-                        switch (rightBox.Type)
-                        {
-                            case JunctionBox.JunctionType.Cross: pos.X++; break;
-                            case JunctionBox.JunctionType.TL: pos.Y--; break;
-                            case JunctionBox.JunctionType.TR: pos.Y++; break;
-                        }
-
-                    nextWire = WireArray[pos.X, pos.Y] & nextWire;
-                    WiresToSignal.Push(w.NewPos(pos, nextWire));
-                }
-
-
-                pos = new Point(w.X, w.Y + 1); // bottom
-                nextWire = WireArray[pos.X, pos.Y] & w.Wire;
-                if (nextWire > 0)
-                {
-                    while (TileArray[pos.X, pos.Y] is JunctionBox bottomBox)
-                        switch (bottomBox.Type)
-                        {
-                            case JunctionBox.JunctionType.Cross: pos.Y++; break;
-                            case JunctionBox.JunctionType.TL: pos.X--; break;
-                            case JunctionBox.JunctionType.TR: pos.X++; break;
-                        }
-
-                    nextWire = WireArray[pos.X, pos.Y] & nextWire;
-                    WiresToSignal.Push(w.NewPos(pos, nextWire));
-                }
-
-                pos = new Point(w.X - 1, w.Y); // left
-                nextWire = WireArray[pos.X, pos.Y] & w.Wire;
-                if (nextWire > 0)
-                {
-                    while (TileArray[pos.X, pos.Y] is JunctionBox leftBox)
-                        switch (leftBox.Type)
-                        {
-                            case JunctionBox.JunctionType.Cross: pos.X--; break;
-                            case JunctionBox.JunctionType.TL: pos.Y++; break;
-                            case JunctionBox.JunctionType.TR: pos.Y--; break;
-                        }
-
-                    nextWire = WireArray[pos.X, pos.Y] & nextWire;
-                    WiresToSignal.Push(w.NewPos(pos, nextWire));
                 }
             }
 
@@ -735,73 +660,131 @@ namespace TerraLogic.Gui
                 else WireUpdateArray[w.X, w.Y] = ((long)trackId << 32) | (uint)w.Wire;
                 TrackedPoints.Add(w);
 
-
-                Point pos = new Point(w.X, w.Y - 1); // top
-                int nextWire = WireArray[pos.X, pos.Y] & w.Wire;
-                if (nextWire > 0)
+                void TrackWire(Point pos, Side sideIn)
                 {
-                    while (TileArray[pos.X, pos.Y] is JunctionBox topBox)
-                        switch (topBox.Type)
+                    int nextWire = WireArray[pos.X, pos.Y] & w.Wire;
+                    while (nextWire > 0 && TileArray[pos.X, pos.Y] is JunctionBox box)
+                    {
+                        switch (box.Type)
                         {
-                            case JunctionBox.JunctionType.Cross: pos.Y--; break;
-                            case JunctionBox.JunctionType.TL: pos.X++; break;
-                            case JunctionBox.JunctionType.TR: pos.X--; break;
+                            case JunctionBox.JunctionType.Cross:
+                                switch (sideIn)
+                                {
+                                    case Side.Up: pos.Y++; break;
+                                    case Side.Right: pos.X--; break;
+                                    case Side.Down: pos.Y--; break;
+                                    case Side.Left: pos.X++; break;
+                                }
+                                break;
+                            case JunctionBox.JunctionType.TL:
+                                switch (sideIn)
+                                {
+                                    case Side.Up: pos.X--; sideIn = Side.Right; break;
+                                    case Side.Right: pos.Y++; sideIn = Side.Up; break;
+                                    case Side.Down: pos.X++; sideIn = Side.Left; break;
+                                    case Side.Left: pos.Y--; sideIn = Side.Down; break;
+                                }
+                                break;
+                            case JunctionBox.JunctionType.TR:
+                                switch (sideIn)
+                                {
+                                    case Side.Up: pos.X++; sideIn = Side.Left; break;
+                                    case Side.Right: pos.Y--; sideIn = Side.Down; break;
+                                    case Side.Down: pos.X--; sideIn = Side.Right; break;
+                                    case Side.Left: pos.Y++; sideIn = Side.Up; break;
+                                }
+                                break;
                         }
 
-                    nextWire = WireArray[pos.X, pos.Y] & w.Wire;
-                    WiresToTrack.Push(w.NewPos(pos, nextWire));
+                        nextWire = WireArray[pos.X, pos.Y] & nextWire;
+                    }
+                    if (nextWire > 0) WiresToTrack.Push(w.NewPos(pos, nextWire));
                 }
 
-
-                pos = new Point(w.X + 1, w.Y); // right
-                nextWire = WireArray[pos.X, pos.Y] & w.Wire;
-
-                if (nextWire > 0)
-                {
-                    while (TileArray[pos.X, pos.Y] is JunctionBox rightBox)
-                        switch (rightBox.Type)
-                        {
-                            case JunctionBox.JunctionType.Cross: pos.X++; break;
-                            case JunctionBox.JunctionType.TL: pos.Y--; break;
-                            case JunctionBox.JunctionType.TR: pos.Y++; break;
-                        }
-
-                    nextWire = WireArray[pos.X, pos.Y] & nextWire;
-                    WiresToTrack.Push(w.NewPos(pos, nextWire));
-                }
-
-
-                pos = new Point(w.X, w.Y + 1); // bottom
-                nextWire = WireArray[pos.X, pos.Y] & w.Wire;
-                if (nextWire > 0)
-                {
-                    while (TileArray[pos.X, pos.Y] is JunctionBox bottomBox)
-                        switch (bottomBox.Type)
-                        {
-                            case JunctionBox.JunctionType.Cross: pos.Y++; break;
-                            case JunctionBox.JunctionType.TL: pos.X--; break;
-                            case JunctionBox.JunctionType.TR: pos.X++; break;
-                        }
-
-                    nextWire = WireArray[pos.X, pos.Y] & nextWire;
-                    WiresToTrack.Push(w.NewPos(pos, nextWire));
-                }
-
-                pos = new Point(w.X - 1, w.Y); // left
-                nextWire = WireArray[pos.X, pos.Y] & w.Wire;
-                if (nextWire > 0)
-                {
-                    while (TileArray[pos.X, pos.Y] is JunctionBox leftBox)
-                        switch (leftBox.Type)
-                        {
-                            case JunctionBox.JunctionType.Cross: pos.X--; break;
-                            case JunctionBox.JunctionType.TL: pos.Y++; break;
-                            case JunctionBox.JunctionType.TR: pos.Y--; break;
-                        }
-
-                    nextWire = WireArray[pos.X, pos.Y] & nextWire;
-                    WiresToTrack.Push(w.NewPos(pos, nextWire));
-                }
+                TrackWire(new Point(w.X, w.Y - 1), Side.Down);
+                TrackWire(new Point(w.X + 1, w.Y), Side.Left);
+                TrackWire(new Point(w.X, w.Y + 1), Side.Up);
+                TrackWire(new Point(w.X - 1, w.Y), Side.Right);
+                //Point pos = new Point(w.X, w.Y - 1); // top
+                //int nextWire = WireArray[pos.X, pos.Y] & w.Wire;
+                //bool redirected = false;
+                //
+                //if (nextWire > 0)
+                //{
+                //    if (TileArray[pos.X, pos.Y] is JunctionBox topBox)
+                //    {
+                //        redirected = true;
+                //        switch (topBox.Type)
+                //        {
+                //            case JunctionBox.JunctionType.Cross: pos.Y--; break;
+                //            case JunctionBox.JunctionType.TL: pos.X++; break;
+                //            case JunctionBox.JunctionType.TR: pos.X--; break;
+                //        }
+                //    }
+                //
+                //    nextWire = WireArray[pos.X, pos.Y] & w.Wire;
+                //    WiresToTrack.Push(w.NewPos(pos, nextWire));
+                //}
+                //
+                //
+                //pos = new Point(w.X + 1, w.Y); // right
+                //nextWire = WireArray[pos.X, pos.Y] & w.Wire;
+                //
+                //if (nextWire > 0)
+                //{
+                //    if (TileArray[pos.X, pos.Y] is JunctionBox rightBox)
+                //    {
+                //        redirected = true;
+                //        switch (rightBox.Type)
+                //        {
+                //            case JunctionBox.JunctionType.Cross: pos.X++; break;
+                //            case JunctionBox.JunctionType.TL: pos.Y--; break;
+                //            case JunctionBox.JunctionType.TR: pos.Y++; break;
+                //        }
+                //    }
+                //
+                //    nextWire = WireArray[pos.X, pos.Y] & nextWire;
+                //    WiresToTrack.Push(w.NewPos(pos, nextWire));
+                //}
+                //
+                //
+                //pos = new Point(w.X, w.Y + 1); // bottom
+                //nextWire = WireArray[pos.X, pos.Y] & w.Wire;
+                //if (nextWire > 0)
+                //{
+                //    if (TileArray[pos.X, pos.Y] is JunctionBox bottomBox)
+                //    {
+                //        redirected = true;
+                //        switch (bottomBox.Type)
+                //        {
+                //            case JunctionBox.JunctionType.Cross: pos.Y++; break;
+                //            case JunctionBox.JunctionType.TL: pos.X--; break;
+                //            case JunctionBox.JunctionType.TR: pos.X++; break;
+                //        }
+                //    }
+                //
+                //    nextWire = WireArray[pos.X, pos.Y] & nextWire;
+                //    WiresToTrack.Push(w.NewPos(pos, nextWire));
+                //}
+                //
+                //pos = new Point(w.X - 1, w.Y); // left
+                //nextWire = WireArray[pos.X, pos.Y] & w.Wire;
+                //if (nextWire > 0)
+                //{
+                //    if (TileArray[pos.X, pos.Y] is JunctionBox leftBox)
+                //    {
+                //        redirected = true;
+                //        switch (leftBox.Type)
+                //        {
+                //            case JunctionBox.JunctionType.Cross: pos.X--; break;
+                //            case JunctionBox.JunctionType.TL: pos.Y++; break;
+                //            case JunctionBox.JunctionType.TR: pos.Y--; break;
+                //        }
+                //    }
+                //
+                //    nextWire = WireArray[pos.X, pos.Y] & nextWire;
+                //    WiresToTrack.Push(w.NewPos(pos, nextWire));
+                //}
             }
 
             return TrackedPoints.ToArray();
@@ -915,7 +898,6 @@ namespace TerraLogic.Gui
             return true;
 
         }
-
     }
 
     public struct WireSignal
@@ -963,8 +945,6 @@ namespace TerraLogic.Gui
             Fade = 300;
         }
     }
-
-
     class PastePreview
     {
         internal string WireData;
@@ -972,6 +952,7 @@ namespace TerraLogic.Gui
         internal Tile[,] Tiles;
     }
 
+    enum Side { Up, Right, Down, Left }
 
 
 }

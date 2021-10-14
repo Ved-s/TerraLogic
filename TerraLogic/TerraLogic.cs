@@ -21,9 +21,13 @@ namespace TerraLogic
         internal static SpriteFont Consolas10;
         internal static SpriteFont Consolas8;
 
+        internal Process ThisProcess = Process.GetCurrentProcess();
+
         float DrawTimeMS = 0f;
         float TickTimeMS = 0f;
         DateTime TmpTime = DateTime.Now;
+
+        ulong RanUpdates = 0;
 
         internal static UIRoot Root;
 
@@ -72,7 +76,7 @@ namespace TerraLogic
                                         $"{Instance.DrawTimeMS:0.000} ms frame\n" +
                                         $"{Instance.TickTimeMS:0.000} ms tick\n" +
                                         $"{Gui.Logics.WireUpdateWatch.Elapsed.TotalMilliseconds:0.000} ms wire\n" +
-                                        $"{Util.MakeSize((ulong)Process.GetCurrentProcess().PrivateMemorySize64)} priv";
+                                        $"{Util.MakeSize((ulong)ThisProcess.PrivateMemorySize64)} priv";
                                 }
                             },
                             new Gui.TileSelector("tileSelect"),
@@ -150,7 +154,6 @@ namespace TerraLogic
                     }
                 }
             };
-
             Gui.Logics.LoadFromFile("latest.tl");
         }
 
@@ -183,8 +186,9 @@ namespace TerraLogic
             TmpTime = DateTime.Now;
             base.Update(gameTime);
             Root.Update();
-
             TickTimeMS = (float)(DateTime.Now - TmpTime).TotalMilliseconds;
+            if (RanUpdates % 60 == 0) ThisProcess = Process.GetCurrentProcess();
+            RanUpdates++;
         }
         protected override void Draw(GameTime gameTime)
         {

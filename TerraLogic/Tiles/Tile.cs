@@ -38,7 +38,7 @@ namespace TerraLogic.Tiles
             if (!Created) return;
 
             CurrentWireUpdateStack.Push(this);
-            Gui.Logics.SendWireSignal(new Rectangle(Pos.X, Pos.Y, Size.X, Size.Y), wire);
+            Gui.Logics.SignalWire(new Rectangle(Pos.X, Pos.Y, Size.X, Size.Y), wire);
             CurrentWireUpdateStack.Pop();
         }
 

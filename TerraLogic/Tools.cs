@@ -2,7 +2,9 @@
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
+using System.Diagnostics;
 using TerraLogic.GuiElements;
+using TerraLogic.Tiles;
 using static TerraLogic.GuiElements.Graphics;
 
 namespace TerraLogic.Tools
@@ -218,6 +220,7 @@ namespace TerraLogic.Tools
                             else Gui.Logics.WireArray[x, y] |= newWires[x, y];
                         }
                     Deselected();
+                    WireColorChanged();
                 }
                 if (key == Keys.M) 
                 { 
@@ -272,11 +275,14 @@ namespace TerraLogic.Tools
                 {
                     if ((Gui.Logics.WireArray[x, y] & Gui.Logics.SelectedWire) != 0)
                     {
-                        otherWires[x, y] = true;
-                        otherWires[x, y - 1] = true;
-                        otherWires[x + 1, y] = true;
-                        otherWires[x, y + 1] = true;
-                        otherWires[x - 1, y] = true;
+                        if (Gui.Logics.TileArray[x, y] is not Tiles.JunctionBox)
+                        {
+                            otherWires[x, y] = true;
+                            otherWires[x, y - 1] = true;
+                            otherWires[x + 1, y] = true;
+                            otherWires[x, y + 1] = true;
+                            otherWires[x - 1, y] = true;
+                        }
                     }
                 }
             if (A != default) AStar();
@@ -319,21 +325,48 @@ namespace TerraLogic.Tools
 
             Point[] path = AStarPathfinding.AStar(A, B, TimeSpan.FromMilliseconds(100), IsPassable);
             if (path is null) { aStarError = true; return; }
-
             foreach (Point pos in path)
             {
                 newWires[pos.X, pos.Y] = Gui.Logics.SelectedWire;
             }
         }
 
-        private bool IsPassable(Point pos, AStarPathfinding.Side side)
+        private bool IsPassable(AStarPathfinding.Side sideIn, Point pos, AStarPathfinding.Side sideOut)
         {
             if (pos.X < 0 || pos.Y < 0) return false;
+            if (Gui.Logics.TileArray[pos.X, pos.Y] is Tiles.JunctionBox box) return JunctionPassable(sideIn, sideOut, box);
             return (Gui.Logics.TileArray[pos.X, pos.Y] is null && !otherWires[pos.X, pos.Y])
                 || pos == B
                 || trackedWires[pos.X, pos.Y]
                 || trackedWires[pos.X, pos.Y + 1] || trackedWires[pos.X, pos.Y - 1]
                 || trackedWires[pos.X + 1, pos.Y] || trackedWires[pos.X - 1, pos.Y];
+        }
+
+        private bool JunctionPassable(AStarPathfinding.Side sideIn, AStarPathfinding.Side sideOut, JunctionBox box)
+        {
+            switch (box.Type) 
+            {
+                case JunctionBox.JunctionType.Cross: return sideIn == sideOut;
+                case JunctionBox.JunctionType.TL:
+                    switch (sideIn) 
+                    {
+                        case AStarPathfinding.Side.Up: return sideOut == AStarPathfinding.Side.Left;
+                        case AStarPathfinding.Side.Left: return sideOut == AStarPathfinding.Side.Up;
+                        case AStarPathfinding.Side.Down: return sideOut == AStarPathfinding.Side.Right;
+                        case AStarPathfinding.Side.Right: return sideOut == AStarPathfinding.Side.Down;
+                    }
+                    return false;
+                case JunctionBox.JunctionType.TR:
+                    switch (sideIn)
+                    {
+                        case AStarPathfinding.Side.Up: return sideOut == AStarPathfinding.Side.Right;
+                        case AStarPathfinding.Side.Right: return sideOut == AStarPathfinding.Side.Up;
+                        case AStarPathfinding.Side.Down: return sideOut == AStarPathfinding.Side.Left;
+                        case AStarPathfinding.Side.Left: return sideOut == AStarPathfinding.Side.Down;
+                    }
+                    return false;
+            }
+            return false;
         }
 
         private Point[] Around4(Point p) => new Point[]

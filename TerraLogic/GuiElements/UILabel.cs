@@ -46,8 +46,8 @@ namespace TerraLogic.GuiElements
             if (Text != null && AutoSize && Font != null)
             {
                 Point wh = Font.MeasureString(Text).ToPoint();
-                Width = wh.X;
-                Height = wh.Y;
+                if (Bounds.Width != wh.X) Width = wh.X;
+                if (Bounds.Height != wh.Y) Height = wh.Y;
             }
         }
 

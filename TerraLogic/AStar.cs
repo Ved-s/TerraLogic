@@ -8,11 +8,13 @@ namespace TerraLogic
 {
     public static class AStarPathfinding
     {
-        public static Point[] AStar(Point start, Point end, TimeSpan timeLimit, Func<Point, Side, bool> isPassable)
+        public delegate bool IsPassable(Side sideIn, Point pos, Side sideOut);
+
+        public static Point[] AStar(Point start, Point end, TimeSpan timeLimit, IsPassable isPassable)
         {
             Dictionary<Point, AStarNode> nodes = new Dictionary<Point, AStarNode>()
             {
-                { start, CreateNode(start, 0, Side.Up) }
+                { start, CreateNode(start, 0, Side.None) }
             };
 
             AStarNode CreateNode(Point at, int g, Side dir)
@@ -25,7 +27,7 @@ namespace TerraLogic
                     G = g,
                     H = h,
                     pos = at,
-                    dir = dir
+                    dir = dir,
                 };
             }
             AStarNode FindMinCost()
@@ -40,9 +42,9 @@ namespace TerraLogic
                 return n;
             }
 
-            void SetNodeAt(AStarNode me, Point at, Side side)
+            AStarNode SetNodeAt(AStarNode me, Point at, Side side)
             {
-                if (!isPassable(at, side)) return;
+                if (!isPassable(me.dir, me.pos, side)) return null;
 
                 if (nodes.TryGetValue(at, out AStarNode nei))
                 {
@@ -51,8 +53,14 @@ namespace TerraLogic
                         nei.G = me.G + 10;
                         nei.dir = side;
                     }
+                    return nei;
                 }
-                else nodes.Add(at, CreateNode(at, me.G + 10, side));
+                else
+                {
+                    AStarNode node = CreateNode(at, me.G + 10, side);
+                    nodes.Add(at, node);
+                    return node;
+                }
             }
 
             DateTime startTime = DateTime.Now;
@@ -65,7 +73,6 @@ namespace TerraLogic
                 if (node is null) return null;
                 if (node.pos == end)
                 {
-
                     List<Point> track = new List<Point>();
                     while (true)
                     {
@@ -73,10 +80,10 @@ namespace TerraLogic
                         if (node.pos == start) return track.ToArray();
                         switch (node.dir)
                         {
-                            case Side.Down:  node = nodes[node.pos.Add(0, 1)]; break;
-                            case Side.Up:    node = nodes[node.pos.Add(0, -1)]; break;
-                            case Side.Left:  node = nodes[node.pos.Add(-1, 0)]; break;
-                            case Side.Right: node = nodes[node.pos.Add(1, 0)]; break;
+                            case Side.Down: node = nodes[node.pos.Add(0, 1)]; break;
+                            case Side.Up: node = nodes[node.pos.Add(0, -1)]; break;
+                            case Side.Right: node = nodes[node.pos.Add(-1, 0)]; break;
+                            case Side.Left: node = nodes[node.pos.Add(1, 0)]; break;
                         }
                     }
                 }
@@ -85,8 +92,8 @@ namespace TerraLogic
 
                 SetNodeAt(node, node.pos.Add(0, 1), Side.Up);
                 SetNodeAt(node, node.pos.Add(0, -1), Side.Down);
-                SetNodeAt(node, node.pos.Add(1, 0), Side.Left);
-                SetNodeAt(node, node.pos.Add(-1, 0), Side.Right);
+                SetNodeAt(node, node.pos.Add(1, 0), Side.Right);
+                SetNodeAt(node, node.pos.Add(-1, 0), Side.Left);
             }
 
         }
@@ -116,6 +123,7 @@ namespace TerraLogic
             }
         }
 
-        public enum Side { Up, Right, Down, Left }
+        public enum NodeState { Open, Closed, Fixed }
+        public enum Side { None, Up, Right, Down, Left }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using Microsoft.Xna.Framework;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -10,7 +11,7 @@ using System.Text.RegularExpressions;
 
 namespace TerraLogic
 {
-    public class ChunkArray2D
+    public class ChunkArray2D : IEnumerable<ChunkArray2D.ChunkItem>
     {
         internal static Regex ChunkRegex = new Regex("(\\d+),(\\d+):([^;]*);");
         internal static Regex HeaderRegex = new Regex("^(\\d+);");
@@ -160,9 +161,47 @@ namespace TerraLogic
         }
 
         public void Clear() { ChunkMap = new int[0, 0][,]; }
+
+        public IEnumerator<ChunkItem> GetEnumerator()
+        {
+            for (int y = 0; y < ChunkMap.GetLength(1); y++)
+                for (int x = 0; x < ChunkMap.GetLength(0); x++)
+                    if (ChunkMap[x, y] is not null)
+                        for (int cy = 0; cy < ChunkSize; cy++)
+                            for (int cx = 0; cx < ChunkSize; cx++)
+                                yield return new ChunkItem()
+                                {
+                                    Item = ChunkMap[x, y][cx, cy],
+                                    X = x * ChunkSize + cx,
+                                    Y = y * ChunkSize + cy
+                                };
+            yield break;
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            for (int y = 0; y < ChunkMap.GetLength(1); y++)
+                for (int x = 0; x < ChunkMap.GetLength(0); x++)
+                    if (ChunkMap[x, y] is not null)
+                        for (int cy = 0; y < ChunkSize; cy++)
+                            for (int cx = 0; x < ChunkSize; cx++)
+                                yield return new ChunkItem()
+                                {
+                                    Item = ChunkMap[x, y][cx, cy],
+                                    X = x * ChunkSize + cx,
+                                    Y = y * ChunkSize + cy
+                                };
+            yield break;
+        }
+
+        public struct ChunkItem 
+        {
+            public int Item;
+            public int X, Y;
+        }
     }
 
-    public class ChunkArray2D<T>
+    public class ChunkArray2D<T> : IEnumerable<ChunkArray2D<T>.ChunkItem>
     {
         T[,][,] ChunkMap;
         int ChunkSize;
@@ -230,6 +269,46 @@ namespace TerraLogic
         internal void Clear()
         {
             ChunkMap = new T[0, 0][,];
+        }
+
+        public IEnumerator<ChunkItem> GetEnumerator()
+        {
+            for (int y = 0; y < ChunkMap.GetLength(1); y++)
+                for (int x = 0; x < ChunkMap.GetLength(0); x++)
+                    if (ChunkMap[x, y] is not null)
+                        for (int cy = 0; cy < ChunkSize; cy++)
+                            for (int cx = 0; cx < ChunkSize; cx++)
+                                if (ChunkMap[x, y][cx, cy] is not null)
+                                    yield return new ChunkItem()
+                                    {
+                                        Item = ChunkMap[x, y][cx, cy],
+                                        X = x * ChunkSize + cx,
+                                        Y = y * ChunkSize + cy
+                                    };
+            yield break;
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            for (int y = 0; y < ChunkMap.GetLength(1); y++)
+                for (int x = 0; x < ChunkMap.GetLength(0); x++)
+                    if (ChunkMap[x, y] is not null)
+                        for (int cy = 0; cy < ChunkSize; cy++)
+                            for (int cx = 0; cx < ChunkSize; cx++)
+                                if (ChunkMap[x, y][cx, cy] is not null)
+                                    yield return new ChunkItem()
+                                    {
+                                        Item = ChunkMap[x, y][cx, cy],
+                                        X = x * ChunkSize + cx,
+                                        Y = y * ChunkSize + cy
+                                    };
+            yield break;
+        }
+
+        public struct ChunkItem
+        {
+            public T Item;
+            public int X, Y;
         }
     }
 }

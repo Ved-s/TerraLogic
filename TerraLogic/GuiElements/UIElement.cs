@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 
 namespace TerraLogic.GuiElements
@@ -13,6 +14,8 @@ namespace TerraLogic.GuiElements
         public static Dictionary<string, UIElement> Elements = new Dictionary<string, UIElement>();
 
         List<UIModal> VisibleModals = new List<UIModal>();
+
+        Stopwatch UpdateWatch = new Stopwatch();
 
         public UIElement(string name)
         {
@@ -43,7 +46,7 @@ namespace TerraLogic.GuiElements
         internal void DrawDebug(SpriteBatch spriteBatch, Color c)
         {
             Graphics.DrawRectangle(spriteBatch, Bounds, c);
-            string data = $"{Parent?.Name}/{Name ?? "null"}\n{Bounds.X},{Bounds.Y} {Bounds.Width}x{Bounds.Height}";
+            string data = $"{Parent?.Name}/{Name ?? "null"}\n{Bounds.X},{Bounds.Y} {Bounds.Width}x{Bounds.Height}\n{UpdateWatch.Elapsed.Milliseconds}ms update";
             Vector2 s = Font.MeasureString(data);
             Vector2 pos = Bounds.Location.ToVector2();
             pos.X += (Bounds.Width - s.X) / 2;
@@ -70,6 +73,7 @@ namespace TerraLogic.GuiElements
 
         public virtual void Update()
         {
+            UpdateWatch.Restart();
             OnUpdate?.Invoke(this);
             if (!Enabled || !Visible) return;
             if (PositionRecalculateRequired) Recalculate();
@@ -83,6 +87,7 @@ namespace TerraLogic.GuiElements
                 e.Update();
             }
             PositionRecalculateRequired = false;
+            UpdateWatch.Stop();
         }
 
         protected void Recalculate()
