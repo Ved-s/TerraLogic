@@ -36,7 +36,7 @@ namespace TerraLogic
 
                 foreach (AStarNode node in nodes.Values)
                 {
-                    if (!node.closed && (node.F < n.F)) n = node; //|| node.H < n.H
+                    if (!node.closed && (node.F < n.F)) n = node;
                 }
                 if (n.G == int.MaxValue) return null;
                 return n;
@@ -123,7 +123,6 @@ namespace TerraLogic
             }
         }
 
-        public enum NodeState { Open, Closed, Fixed }
         public enum Side { None, Up, Right, Down, Left }
     }
 }

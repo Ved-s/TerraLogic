@@ -308,9 +308,8 @@ namespace TerraLogic.Gui
                                 if (PastePreview.Tiles[x, y] is not null)
                                 {
                                     string data = PastePreview.Tiles[x, y].GetData();
-                                    SetTile(worldpos.X + x, worldpos.Y + y, PastePreview.Tiles[x, y].Id + (data is null ? "" : ":" + data));
+                                    SetTile(worldpos.X + x, worldpos.Y + y, PastePreview.Tiles[x, y].Id + (data is null ? "" : ":" + data), true);
                                 }
-
                     }
                 }
             }

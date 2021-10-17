@@ -99,7 +99,7 @@ namespace TerraLogic.Tiles
 
         internal override string GetData()
         {
-            return (State == LampState.On) ? "+" : (State == LampState.Faulty) ? "?" : "-";
+            return (State == LampState.On) ? "+" : (State == LampState.Faulty) ? "?" : null;
         }
 
         internal enum LampState { Off, On, Faulty, FaultyTriggered }

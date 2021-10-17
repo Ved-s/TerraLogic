@@ -11,8 +11,9 @@ namespace TerraLogic.Tiles
 {
     abstract class LogicGate : Tile
     {
-        internal bool State;
-        internal bool IsFaulty;
+        internal bool State = false;
+        internal bool IsFaulty = false;
+        internal bool Display = false;
 
         protected abstract int GateId { get; }
         protected abstract string GateName { get; }
@@ -20,9 +21,11 @@ namespace TerraLogic.Tiles
         public override string Id => "gate" + GateName;
         public override string DisplayName => $"Logic Gate ({GateName.ToUpper()})";
 
+        public override string[] PreviewVariants => new string[] { "!" };
+
         public override bool NeedsContinuousUpdate => true;
 
-        static Texture2D Sprite; // Of On Faulty
+        static Texture2D Sprite;
 
         int RedFade = 0;
 
@@ -58,7 +61,7 @@ namespace TerraLogic.Tiles
         {
             rect = isScreenPos ? rect : PanNZoom.WorldToScreen(rect);
             if (IsFaulty) TerraLogic.SpriteBatch.DrawTileSprite(Sprite, 2, GateId, rect, Color.White);
-            else TerraLogic.SpriteBatch.DrawTileSprite(Sprite, State? 1 : 0, GateId, rect, Color.White);
+            else TerraLogic.SpriteBatch.DrawTileSprite(Sprite, (State | Display)? 1 : 0, GateId, rect, Color.White);
 
             if (RedFade > 0) 
             {
@@ -113,20 +116,20 @@ namespace TerraLogic.Tiles
         internal override Tile CreateTile(string data, bool preview)
         {
             LogicGate t = (LogicGate)Activator.CreateInstance(this.GetType());
-            if (preview)
-                t.State = true;
-            else 
+            if (data is not null && data.Length >= 1)
             {
+                if (data[0] == '!') { t.Display = true; data = data.Substring(1); }
+
                 t.State = data == "+";
                 t.IsFaulty = data == "?";
-
             }
+            
             return t;
         }
 
         internal override string GetData()
         {
-            return !Created? "-" : (IsFaulty) ? "?" : (State) ? "+" : "-";
+            return (IsFaulty) ? "?" : (State) ? "+" : null;
         }
     }
 }
