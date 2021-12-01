@@ -123,7 +123,7 @@ namespace TerraLogic.GuiElements
             vec += textOffset;
             vec += a;
 
-            spriteBatch.DrawStringShaded(font, text, vec.ToVector2(), color, new Color(0,0,0,color.A), lineAngle);
+            spriteBatch.DrawStringShaded(font, text, vec.ToVector2(), color, new Color((byte)0, (byte)0, (byte)0, color.A), lineAngle);
         }
 
     }
