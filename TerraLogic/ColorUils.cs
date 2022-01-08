@@ -60,4 +60,62 @@ namespace TerraLogic
             Value = value;
         }
     }
+
+    public struct Colors 
+    {
+        public Color Foreground;
+        public Color Background;
+
+        public Colors(Color fore, Color back) 
+        {
+            Foreground = fore;
+            Background = back;
+        }
+
+        public Colors(byte foreR, byte foreG, byte foreB, Color back)
+        {
+            Foreground = new Color(foreR, foreG, foreB);
+            Background = back;
+        }
+        public Colors(Color fore, byte backR, byte backG, byte backB)
+        {
+            Foreground = fore;
+            Background = new Color(backR, backG, backB);
+        }
+        public Colors(byte foreR, byte foreG, byte foreB, byte backR, byte backG, byte backB)
+        {
+            Foreground = new Color(foreR, foreG, foreB);
+            Background = new Color(backR, backG, backB);
+        }
+        public Colors(byte foreR, byte foreG, byte foreB, byte foreA, Color back)
+        {
+            Foreground = new Color(foreR, foreG, foreB, foreA);
+            Background = back;
+        }
+        public Colors(Color fore, byte backR, byte backG, byte backB, byte backA)
+        {
+            Foreground = fore;
+            Background = new Color(backR, backG, backB, backA);
+        }
+        public Colors(byte foreR, byte foreG, byte foreB, byte foreA, byte backR, byte backG, byte backB, byte backA)
+        {
+            Foreground = new Color(foreR, foreG, foreB, foreA);
+            Background = new Color(backR, backG, backB, backA);
+        }
+
+        public Colors Swapped()
+        {
+            return new Colors(Background, Foreground);
+        }
+
+        public Colors WithForeground(Color fore)
+        {
+            return new Colors(fore, Background);
+        }
+
+        public Colors WithBackground(Color back)
+        {
+            return new Colors(Foreground, back);
+        }
+    }
 }

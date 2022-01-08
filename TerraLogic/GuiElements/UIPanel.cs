@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,7 +14,10 @@ namespace TerraLogic.GuiElements
         public override void Draw(SpriteBatch spriteBatch)
         {
             DrawBackground(spriteBatch);
+            if (OutlineColor != Color.Transparent) Graphics.DrawRectangle(spriteBatch, Bounds, OutlineColor);
             base.Draw(spriteBatch);
         }
+
+        public Color OutlineColor = Color.Transparent;
     }
 }

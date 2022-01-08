@@ -376,5 +376,19 @@ namespace TerraLogic.Tools
 
         enum DragState { None, A, B }
     }
+    public class TriggerWire : Tool
+    {
+        public override string Id => "trigger";
+        public override string DisplayName => "Trigger selected wires";
+
+        public override bool AllowWireSelection => true;
+        public override bool DrawMouseIcon => false;
+
+        public override void MouseKeyUpdate(MouseKeys key, EventType @event, Point worldpos)
+        {
+            if (key == MouseKeys.Left && @event == EventType.Presssed)
+                Gui.Logics.SignalWire(worldpos, Gui.Logics.SelectedWire);
+        }
+    }
 
 }

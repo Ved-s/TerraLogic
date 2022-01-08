@@ -21,6 +21,8 @@ namespace TerraLogic.Gui
         {
             DrawBackground(spriteBatch);
 
+            Graphics.DrawRectangle(spriteBatch, Bounds, new Color(48, 48, 48));
+
             int ypos = 3;
             Rectangle hover;
 

@@ -64,7 +64,6 @@ namespace TerraLogic.Tiles
                     case LampState.Off: State = LampState.On; break;
                     case LampState.Faulty: State = LampState.FaultyTriggered; break;
                 }
-
         }
 
         internal override Tile CreateTile(string data, bool preview)

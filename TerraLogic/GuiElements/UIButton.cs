@@ -1,5 +1,6 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,19 +20,30 @@ namespace TerraLogic.GuiElements
             textOffset.X = (int)textOffset.X;
             textOffset.Y = (int)textOffset.Y;
 
-            
+            bool clicked = Hover && Root.CurrentMouseKeys.LeftButton == ButtonState.Pressed && ClickColors.HasValue;
 
-            if (Hover) DrawBackground(spriteBatch, HoverBackColor);
+            if (Hover)
+            {
+                if (clicked) DrawBackground(spriteBatch, ClickColors.Value.Background);
+                else DrawBackground(spriteBatch, HoverColors.Background);
+            }
             else DrawBackground(spriteBatch);
 
             if (OutlineColor != Color.Transparent) Graphics.DrawRectangle(spriteBatch, Bounds, OutlineColor);
 
-            spriteBatch.DrawString(Font, Text, Bounds.Location.ToVector2() + textOffset, (Hover && HoverTextColor != Color.Transparent) ? HoverTextColor : TextColor);
+            Color text =
+                clicked ? ClickColors.Value.Foreground :
+                Hover ? HoverColors.Foreground :
+                TextColor;
+
+            spriteBatch.DrawString(Font, Text, Bounds.Location.ToVector2() + textOffset, text);
+
+
         }
 
-        public Color OutlineColor = Color.Transparent;
+        public virtual Color OutlineColor { get; set; } = Color.Transparent;
 
-        public Color HoverBackColor = Color.Transparent;
-        public Color HoverTextColor = Color.Transparent;
+        public virtual Colors HoverColors { get; set; } = new Colors(Color.White, Color.Transparent);
+        public virtual Colors? ClickColors { get; set; }
     }
 }

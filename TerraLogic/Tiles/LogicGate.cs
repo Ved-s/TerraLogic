@@ -9,11 +9,13 @@ using TerraLogic.GuiElements;
 
 namespace TerraLogic.Tiles
 {
-    abstract class LogicGate : Tile
+    public abstract class LogicGate : Tile
     {
         internal bool State = false;
         internal bool IsFaulty = false;
         internal bool Display = false;
+
+        internal bool NewState = false;
 
         protected abstract int GateId { get; }
         protected abstract string GateName { get; }
@@ -40,7 +42,7 @@ namespace TerraLogic.Tiles
                 {
                     if (!CurrentWireUpdateStack.Contains(this))
                     {
-                        SendSignal();
+                        NewState = !State;
                     }
                     else RedFade = 120;
                 }
@@ -48,11 +50,10 @@ namespace TerraLogic.Tiles
             else if (!IsFaulty)
             {
                 bool newstate = Compute(lamps);
-
+                //Debug.WriteLine($"[{this}] {string.Join("", lamps.Select(b => b ? "1" : "0"))} -> {newstate}");
                 if (newstate != State)
                 {
-                    State = newstate;
-                    if (!CurrentWireUpdateStack.Contains(this)) { SendSignal(); }
+                    if (!CurrentWireUpdateStack.Contains(this)) NewState = newstate;
                     else RedFade = 120;
                 }
             }
@@ -61,9 +62,9 @@ namespace TerraLogic.Tiles
         {
             rect = isScreenPos ? rect : PanNZoom.WorldToScreen(rect);
             if (IsFaulty) TerraLogic.SpriteBatch.DrawTileSprite(Sprite, 2, GateId, rect, Color.White);
-            else TerraLogic.SpriteBatch.DrawTileSprite(Sprite, (State | Display)? 1 : 0, GateId, rect, Color.White);
+            else TerraLogic.SpriteBatch.DrawTileSprite(Sprite, (State | Display) ? 1 : 0, GateId, rect, Color.White);
 
-            if (RedFade > 0) 
+            if (RedFade > 0)
             {
                 Color c = Color.Red * (RedFade / 120f);
                 Graphics.DrawRectangle(TerraLogic.SpriteBatch, rect, c);
@@ -73,6 +74,11 @@ namespace TerraLogic.Tiles
 
         public override void Update()
         {
+            if (NewState != State)
+            {
+                SendSignal();
+                State = NewState;
+            }
         }
 
         public override void LoadContent(ContentManager content)
@@ -85,7 +91,7 @@ namespace TerraLogic.Tiles
             UpdateState();
         }
 
-        internal void UpdateState()
+        public void UpdateState()
         {
             int scanPos = Pos.Y - 1;
 
@@ -109,7 +115,6 @@ namespace TerraLogic.Tiles
                 }
                 scanPos--;
             }
-
             LampStateChanged(lamps.ToArray(), foundFaulty, faultyTriggered);
         }
 
@@ -123,7 +128,7 @@ namespace TerraLogic.Tiles
                 t.State = data == "+";
                 t.IsFaulty = data == "?";
             }
-            
+
             return t;
         }
 

@@ -78,7 +78,9 @@ namespace TerraLogic.Gui
 
         public static Rectangle ViewBounds;
 
-        static string InfoText = "";
+        public static bool UpdatePaused, UpdateTick;
+
+        public static HashSet<LogicGate> GatesToUpdate = new HashSet<LogicGate>();
 
         internal static void LoadTileContent(ContentManager content)
         {
@@ -211,7 +213,6 @@ namespace TerraLogic.Gui
 
         public override void Draw(SpriteBatch spriteBatch)
         {
-            InfoText = $"Mouse pos: {(PanNZoom.ScreenToWorld(MousePosition) / TileSize.ToVector2()).ToPoint()}";
             TerraLogic.SpriteBatch.End();
             DrawGrid();
             DrawTiles();
@@ -221,15 +222,13 @@ namespace TerraLogic.Gui
                 DrawWires(WireArray, BlendState.AlphaBlend);
             DrawTilePreview();
 
-            for (int i = 0; i < Tools.Count; i++) 
+            for (int i = 0; i < Tools.Count; i++)
                 Tools[i].Draw(spriteBatch, SelectedToolId == i);
-            
+
 
             DrawWireDebug();
-            
+
             TerraLogic.SpriteBatch.Begin();
-            Point textSize = Instance.Font.MeasureString(InfoText).ToPoint();
-            TerraLogic.SpriteBatch.DrawStringShaded(Instance.Font, InfoText, new Vector2(Instance.Bounds.X, Instance.Bounds.Height - textSize.Y), Color.White, Color.Black);
 
         }
 
@@ -239,25 +238,55 @@ namespace TerraLogic.Gui
             base.Update();
             if (SelectedToolId > -1) Tools[SelectedToolId].Update();
 
-            foreach (ChunkArray2D<Tile>.ChunkItem tile in TileArray)
+            bool currentPausedUpdateTick = UpdatePaused && UpdateTick;
+            if (currentPausedUpdateTick)
+                UpdateTick = false;
+
+            if (currentPausedUpdateTick || !WireDebugActive)
+                WireDebug.Clear();
+
+            if (!UpdatePaused || currentPausedUpdateTick && GatesToUpdate.Count == 0)
+            {
+                foreach (ChunkArray2D<Tile>.ChunkItem tile in TileArray)
                 {
-                    if (tile.Item is null || (!tile.Item.NeedsUpdate && !tile.Item.NeedsContinuousUpdate) 
+                    if (tile.Item is null || (!tile.Item.NeedsUpdate && !tile.Item.NeedsContinuousUpdate)
                     || tile.Item.Pos.X != tile.X || tile.Item.Pos.Y != tile.Y) continue;
                     tile.Item.Update();
                     if (!tile.Item.NeedsContinuousUpdate) tile.Item.NeedsUpdate = false;
                 }
+            }
+
+            if (UpdatePaused && currentPausedUpdateTick && GatesToUpdate.Count > 0)
+                UpdateGates();
+            else if (!UpdatePaused)
+                while (GatesToUpdate.Count > 0)
+                    UpdateGates();
+
 
             WireDebug.RemoveAll(wd => wd.Fade <= 0);
 
-            foreach (WireDebug wd in WireDebug)
-            {
-                wd.Fade--;
-            }
+            if (!UpdatePaused)
+                foreach (WireDebug wd in WireDebug)
+                {
+                    wd.Fade--;
+                }
 
             ViewBounds.X = (int)(PanNZoom.Position.X / TileSize.X);
             ViewBounds.Y = (int)(PanNZoom.Position.Y / TileSize.Y);
             ViewBounds.Width = (int)(TerraLogic.Instance.Window.ClientBounds.Width / (PanNZoom.Zoom * TileSize.X)) + 1;
             ViewBounds.Height = (int)(TerraLogic.Instance.Window.ClientBounds.Height / (PanNZoom.Zoom * TileSize.Y)) + 1;
+        }
+
+        private static void UpdateGates()
+        {
+            LogicGate[] gates = GatesToUpdate.ToArray();
+            GatesToUpdate.Clear();
+
+            foreach (LogicGate g in gates)
+                g.UpdateState();
+
+            foreach (LogicGate g in gates)
+                g.Update();
         }
 
         protected internal override void MouseKeyStateUpdate(MouseKeys key, EventType @event, Point pos)
@@ -372,7 +401,6 @@ namespace TerraLogic.Gui
                             PastePreview = null;
                             global::TerraLogic.Tools.Select.Instance.Selection = new Rectangle();
                             break;
-                        case Keys.F9: WireDebugActive = !WireDebugActive; break;
                     }
                     if (key == Keys.V && Root.CurrentKeys.IsKeyDown(Keys.LeftControl)) LoadFromClipboard();
                 }
@@ -403,8 +431,6 @@ namespace TerraLogic.Gui
         {
             if (!WireDebugActive) return;
 
-            InfoText += $"\nWire debug active ({WireDebug.Count} entries)";
-
             TerraLogic.SpriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend);
 
             Vector2 end = PanNZoom.ScreenToWorld(new Point(Instance.Bounds.Right, Instance.Bounds.Bottom)) / new Vector2(16, 16);
@@ -417,7 +443,7 @@ namespace TerraLogic.Gui
                 originCenter.X += TileSize.X / 2;
                 originCenter.Y += TileSize.Y / 2;
 
-                if (drawArea.Contains(wd.Signal.Origin))
+                if (drawArea.Contains(wd.Signal.Origin) || drawArea.Contains(wd.Signal.Pos))
                 {
                     Color c = GetWireColor(wd.Signal.Wire);
                     c *= (wd.Fade / 300f);
@@ -536,10 +562,10 @@ namespace TerraLogic.Gui
         {
             TerraLogic.SpriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, PanNZoom.Zoom > 1 ? SamplerState.PointWrap : SamplerState.LinearWrap, null, null);
             foreach (ChunkArray2D<Tile>.ChunkItem t in TileArray)
-                {
-                    if (t.Item is null || t.Item.Pos.X != t.X || t.Item.Pos.Y != t.Y) continue;
-                    t.Item.Draw(new Rectangle(t.X * 16, t.Y * 16, t.Item.Size.X * 16, t.Item.Size.Y * 16));
-                }
+            {
+                if (t.Item is null || t.Item.Pos.X != t.X || t.Item.Pos.Y != t.Y) continue;
+                t.Item.Draw(new Rectangle(t.X * 16, t.Y * 16, t.Item.Size.X * 16, t.Item.Size.Y * 16));
+            }
             TerraLogic.SpriteBatch.End();
         }
         private static void DrawGrid()
@@ -587,8 +613,6 @@ namespace TerraLogic.Gui
         {
             WireUpdateWatch.Start();
 
-            HashSet<LogicGate> gatesToUpdate = new HashSet<LogicGate>();
-
             List<Point> points = new List<Point>();
 
             for (int y = rect.Y; y < rect.Bottom; y++)
@@ -616,14 +640,12 @@ namespace TerraLogic.Gui
                                 {
                                     Debug.WriteLine($"[{lg}] Puff!");
                                 }
-                                gatesToUpdate.Add(lg);
+                                GatesToUpdate.Add(lg);
                             }
                         }
                     }
                 }
             }
-
-            foreach (LogicGate lg in gatesToUpdate.ToArray()) lg.UpdateState();
 
             WireUpdateWatch.Stop();
 
@@ -902,6 +924,7 @@ namespace TerraLogic.Gui
     public struct WireSignal
     {
         public Point Origin;
+        public Point Pos => new(X, Y); 
         public int X, Y;
         public int Wire;
 

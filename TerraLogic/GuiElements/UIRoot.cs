@@ -23,13 +23,22 @@ namespace TerraLogic.GuiElements
 
         public new UIElement Hover;
 
+        internal bool Init = false;
+
         public UIRoot() : base("root")
         {
             Root = this;
         }
 
+        protected internal override void Initialize()
+        {
+            Init = true;
+            base.Initialize();
+        }
+
         public override void Update()
         {
+            if (!Init) Initialize();
             CurrentMouseKeys = Mouse.GetState();
             MousePosition = new Point(CurrentMouseKeys.X, CurrentMouseKeys.Y);
 

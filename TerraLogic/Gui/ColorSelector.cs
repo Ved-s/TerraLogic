@@ -67,7 +67,7 @@ namespace TerraLogic.Gui
                     Height = 20,
                     OutlineColor = new Color(64, 64, 64),
                     BackColor = new Color(32, 32, 32, 128),
-                    HoverBackColor = new Color(64, 64, 64, 128),
+                    HoverColors = new Colors(Color.White, 64, 64, 64, 128),
                     Text = "Cancel",
 
                     OnClick = (caller) =>
@@ -85,7 +85,7 @@ namespace TerraLogic.Gui
                     Height = 20,
                     BackColor = new Color(32, 32, 32, 128),
                     OutlineColor = new Color(64, 64, 64),
-                    HoverBackColor = new Color(64, 64, 64, 128),
+                    HoverColors = new Colors(Color.White, 64, 64, 64, 128),
                     Text = "Ok",
                     OnClick = (caller) =>
                     {

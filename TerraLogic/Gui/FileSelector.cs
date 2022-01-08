@@ -47,7 +47,7 @@ namespace TerraLogic.Gui
                 {
                     X = 5,
                     BackColor = new Color(32, 32, 32, 128),
-                    Y = Pos.Bottom(".path"),
+                    Y = Pos.Bottom("../path"),
                     Width = Pos.Width("..") - 10,
                     Height = Pos.Height("..") - 100,
                     ItemClick = (caller, index, item, doubleClick) =>
@@ -98,16 +98,16 @@ namespace TerraLogic.Gui
                         }
                         if (!dir && !back && !root)
                         {
-                            caller.GetElement(".ok").Visible = true;
-                            UIInput curFile = caller.GetElement(".curFile") as UIInput;
+                            caller.GetElement("../ok").Visible = true;
+                            UIInput curFile = caller.GetElement("../curFile") as UIInput;
                             curFile.Visible = true;
                             curFile.Text = i;
                         }
                         else
                         {
-                            UIInput curFile = caller.GetElement(".curFile") as UIInput;
+                            UIInput curFile = caller.GetElement("../curFile") as UIInput;
                             curFile.Visible = !root;
-                            caller.GetElement(".ok").Visible = AllowNonexistentFiles && curFile.TextBuilder.Length > 0 && !root;
+                            caller.GetElement("../ok").Visible = AllowNonexistentFiles && curFile.TextBuilder.Length > 0 && !root;
                             if (AllowNonexistentFiles) curFile.Text = "";
                             else curFile.Visible = false;
                         }
@@ -116,15 +116,18 @@ namespace TerraLogic.Gui
                 new UIInput(".curFile") 
                 {
                     X = 5,
-                    Y = Pos.Bottom(".files") + 5,
-                    Width = Pos.Width(".files"),
+                    Y = Pos.Bottom("../files") + 5,
+                    Width = Pos.Width("../files"),
                     Height = 20,
                     BackColor = new Color(32, 32, 32, 128),
                     OnTextChanged = (caller) => 
                     {
                         if (AllowNonexistentFiles) 
                         {
-                            caller.GetElement(".ok").Visible = caller.TextBuilder.Length > 0;
+                            caller.GetElement("../ok").Visible = 
+                                Path != System.IO.Path.DirectorySeparatorChar.ToString()
+                                && caller.TextBuilder.Length > 0;
+
                             if (caller.TextBuilder.Length == 0) caller.PostText = "";
                             else if (caller.TextBuilder.Length < 3 || caller.TextBuilder.ToString(caller.TextBuilder.Length - 3, 3) != ".tl")
                                 caller.PostText = ".tl";
@@ -144,12 +147,12 @@ namespace TerraLogic.Gui
                 new UIButton(".cancel")
                 {
                     X = Pos.Width("..") - 80,
-                    Y = Pos.Bottom(".files") + 30,
+                    Y = Pos.Bottom("../files") + 30,
                     Width = 75,
                     Height = 20,
                     OutlineColor = new Color(64, 64, 64),
                     BackColor = new Color(32, 32, 32, 128),
-                    HoverBackColor = new Color(64, 64, 64, 128),
+                    HoverColors = new Colors(Color.White, 64, 64, 64, 128),
                     Text = "Cancel",
 
                     OnClick = (caller) => 
@@ -161,13 +164,13 @@ namespace TerraLogic.Gui
                 },
                 new UIButton(".ok")
                 {
-                    X = Pos.X(".cancel") - 80,
-                    Y = Pos.Bottom(".files") + 30,
+                    X = Pos.X("../cancel") - 80,
+                    Y = Pos.Bottom("../files") + 30,
                     Width = 75,
                     Height = 20,
                     BackColor = new Color(32, 32, 32, 128),
                     OutlineColor = new Color(64, 64, 64),
-                    HoverBackColor = new Color(64, 64, 64, 128),
+                    HoverColors = new Colors(Color.White, 64, 64, 64, 128),
                     Text = "Ok",
                     Visible = false,
                     OnClick = (caller) =>
@@ -175,11 +178,11 @@ namespace TerraLogic.Gui
                         string file;
                         if (AllowNonexistentFiles)
                         {
-                            file = GetElement(".curFile").Text;
+                            file = caller.GetElement("../curFile").Text;
                         }
                         else 
                         {
-                            UIList files = caller.GetElement(".files") as UIList;
+                            UIList files = caller.GetElement("../files") as UIList;
                             file = files.Items[files.SelectedIndex] as string;
                         }
                         file = System.IO.Path.Combine(Path, file);
@@ -208,18 +211,18 @@ namespace TerraLogic.Gui
             {
                 curFile.Text = "New Schematic";
             }
-
         }
 
         private void UpdateItems()
         {
             GetElement(".path").Text = Path;
 
-            UIList files = GetElement("files") as UIList;
+            UIList files = GetElement(".files") as UIList;
             files.Items.Clear();
             files.SelectedIndex = -1;
 
             UIInput curFile = GetElement(".curFile") as UIInput;
+            UIButton ok = GetElement(".ok") as UIButton;
             
 
             if (Path == System.IO.Path.DirectorySeparatorChar.ToString())
@@ -228,6 +231,7 @@ namespace TerraLogic.Gui
                 files.Items.Add("Current User");
                 files.Items.Add("App Directory");
                 curFile.Visible = false;
+                ok.Visible = false;
             }
             else
             {
@@ -239,6 +243,7 @@ namespace TerraLogic.Gui
                 }
                 catch (System.IO.IOException) { }
                 curFile.Visible = true;
+                ok.Visible = AllowNonexistentFiles;
             }
 
             

@@ -20,7 +20,7 @@ namespace TerraLogic.GuiElements
         public UIElement(string name)
         {
             if (!string.IsNullOrEmpty(name) && !name.StartsWith(".")) Elements.Add(name, this);
-            Name = name.TrimStart('.');
+            Name = name?.TrimStart('.');
             Sub = new ElementCollection(this);
         }
         public void Add(UIElement element)
@@ -90,9 +90,14 @@ namespace TerraLogic.GuiElements
             UpdateWatch.Stop();
         }
 
+        internal protected virtual void Initialize() 
+        {
+            foreach (UIElement e in Sub) e.Initialize();
+        }
+
         protected void Recalculate()
         {
-            if (Parent is null) return;
+            if (Parent is null || Root is null || !Root.Init) return;
 
             Bounds.Width = Width.Calculate(this);
             Bounds.Height = Height.Calculate(this);
@@ -164,9 +169,9 @@ namespace TerraLogic.GuiElements
 
         protected void DrawBackground(SpriteBatch spriteBatch)
         {
-            if (BackColor != Color.Transparent)
+            if (Colors.Background != Color.Transparent)
             {
-                Graphics.FillRectangle(spriteBatch, Bounds, BackColor);
+                Graphics.FillRectangle(spriteBatch, Bounds, Colors.Background);
             }
         }
         protected void DrawBackground(SpriteBatch spriteBatch, Color @override)
@@ -186,27 +191,36 @@ namespace TerraLogic.GuiElements
             return ((IEnumerable)Sub).GetEnumerator();
         }
 
-        public UIElement GetElement(string name)
+        public UIElement GetElement(string name, bool localOnly = false)
         {
-            if (name == ".") return this;
-            if (name == "..") return Parent;
+            string[] path = name.Split('/', 2);
 
-            if (name.StartsWith(".")) 
+            if (path.Length == 2) 
             {
-                string localName = name.Substring(1);
-                foreach (UIElement element in Sub) if (element.Name == localName) return element;
-
-                UIElement e = this;
-                while (name.StartsWith(".") && e != null) { name = name.Substring(1); e = e.Parent; }
-
-                if (e is null) return null;
-                foreach (UIElement element in e.Sub) if (element.Name == name) return element;
-                return null;
+                UIElement root = GetElement(path[0], localOnly);
+                return root?.GetElement(path[1], true);
             }
 
-            foreach (UIElement element in Sub) if (element.Name == name) return element;
+            if (name == Name) return this;
+            if (name == ".") return this;
+            if (name == "..") return Parent;
+            if (name == "@") return Root;
 
-            return Elements[name];
+            if (name.StartsWith('.')) { localOnly = true; name = name[1..]; }
+
+            if (name.StartsWith("@")) 
+            {
+                name = name[1..]; 
+                return Root.GetElement(name, true); 
+            }
+            foreach (UIElement searchelement in Sub)
+                if (searchelement.Name == name)
+                    return searchelement;
+
+            if (!localOnly)
+                return Parent?.GetElement(name);
+
+            return null;
         }
 
         public override string ToString()
@@ -234,8 +248,7 @@ namespace TerraLogic.GuiElements
 
 
         private string text = "";
-        private Color backColor = Color.Transparent;
-        private Color textColor = Color.White;
+        private Colors colors = new Colors(Color.White, Color.Transparent);
         private Pos x = 0, y = 0, w = 0, h = 0;
         protected bool PositionRecalculateRequired = true;
 
@@ -249,8 +262,11 @@ namespace TerraLogic.GuiElements
         public virtual Pos Height { get => h; set { h = value ?? 0; PositionRecalculateRequired = true; } }
         public virtual SpriteFont Font { get => font ?? Parent?.Font; set => font = value; }
         public virtual string Text { get => text; set => text = value; }
-        public virtual Color BackColor { get => backColor; set => backColor = value; }
-        public virtual Color TextColor { get => textColor; set => textColor = value; }
+
+        public virtual Colors Colors { get => colors; set => colors = value; }
+        public Color TextColor { get => Colors.Foreground; set => Colors = Colors.WithForeground(value); }
+        public Color BackColor { get => Colors.Background; set => Colors = Colors.WithBackground(value); }
+
         public virtual UIElement Parent
         {
             get => parent;
