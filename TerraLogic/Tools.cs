@@ -15,6 +15,7 @@ namespace TerraLogic.Tools
         public abstract string DisplayName { get; }
 
         public virtual bool DrawMouseIcon => true;
+
         public virtual bool AllowWireSelection => false;
 
         public bool IsSelected
@@ -33,7 +34,7 @@ namespace TerraLogic.Tools
 
         public virtual bool ShowWires => false;
 
-        public abstract void MouseKeyUpdate(MouseKeys key, EventType @event, Point worldpos);
+        public abstract void MouseKeyUpdate(MouseKeys key, EventType @event, Point pos);
         public virtual void KeyUpdate(Keys key, EventType @event, KeyboardState state) { }
 
         public virtual void Selected() { }
@@ -50,9 +51,10 @@ namespace TerraLogic.Tools
         public override string Id => "remove";
         public override string DisplayName => "Remove tile";
 
-        public override void MouseKeyUpdate(MouseKeys key, EventType @event, Point worldpos)
+        public override void MouseKeyUpdate(MouseKeys key, EventType @event, Point pos)
         {
-            if (key == MouseKeys.Left && @event != EventType.Released) Gui.Logics.SetTile(worldpos, null);
+            if (key == MouseKeys.Left && @event != EventType.Released)
+                Gui.Logics.HoverWorld.SetTile(Gui.Logics.HoverWorld.ScreenToTiles(pos).ToPoint(), "");
         }
     }
     public class Select : Tool
@@ -66,23 +68,37 @@ namespace TerraLogic.Tools
         public override bool ShowWires => true;
         public override bool DrawMouseIcon => false;
 
+        public World SelectionWorld;
         public Rectangle Selection = new Rectangle();
-        public bool NoSelection { get => Selection.Width == 0 || Selection.Height == 0; }
+        public bool NoSelection { get => SelectionWorld is null || Selection.Width == 0 || Selection.Height == 0; }
 
         bool Dragging;
         Point DragPos;
 
-        public override void MouseKeyUpdate(MouseKeys key, EventType @event, Point worldpos)
+        public override void MouseKeyUpdate(MouseKeys key, EventType @event, Point pos)
         {
             if (key == MouseKeys.Left)
             {
                 if (!Dragging && @event == EventType.Presssed)
                 {
+                    SelectionWorld = Gui.Logics.HoverWorld;
                     Dragging = true;
-                    DragPos = worldpos;
+                    DragPos = SelectionWorld.ScreenToTiles(pos).ToPoint();
+
+                    if (DragPos.X < 0) DragPos.X = 0;
+                    if (DragPos.Y < 0) DragPos.Y = 0;
+                    if (DragPos.X > SelectionWorld.Width) DragPos.X = SelectionWorld.Width - 1;
+                    if (DragPos.Y > SelectionWorld.Height) DragPos.Y = SelectionWorld.Height - 1;
                 }
                 else if (Dragging && @event == EventType.Hold)
                 {
+                    Point worldpos = SelectionWorld.ScreenToTiles(pos).ToPoint();
+
+                    if (worldpos.X < 0) worldpos.X = 0;
+                    if (worldpos.Y < 0) worldpos.Y = 0;
+                    if (worldpos.X > SelectionWorld.Width) worldpos.X = SelectionWorld.Width - 1;
+                    if (worldpos.Y > SelectionWorld.Height) worldpos.Y = SelectionWorld.Height - 1;
+
                     Selection = Util.RectFrom2Points(worldpos, DragPos);
                 }
                 else if (Dragging && @event == EventType.Released)
@@ -101,24 +117,28 @@ namespace TerraLogic.Tools
                     for (int y = Selection.Y; y < Selection.Bottom; y++)
                         for (int x = Selection.X; x < Selection.Right; x++)
                         {
-                            Gui.Logics.SetTile(x, y, null);
-                            Gui.Logics.WireArray[x, y] = 0;
+                            SelectionWorld.SetTile(x, y, "");
+                            SelectionWorld.Wires[x, y] = 0;
                         }
                 }
                 if (state.IsKeyDown(Keys.LeftControl))
                 {
                     if (key == Keys.C)
                     {
-                        Gui.Logics.CopyToClipboard(Selection);
+                        Gui.Logics.PastePreview = SelectionWorld.Copy(Selection);
+                        Gui.Logics.PastePreview.BackgroundColor = Color.CornflowerBlue * 0.2f;
+                        ClipboardUtils.World = Gui.Logics.PastePreview;
                     }
                     else if (key == Keys.X)
                     {
-                        Gui.Logics.CopyToClipboard(Selection);
+                        Gui.Logics.PastePreview = SelectionWorld.Copy(Selection);
+                        Gui.Logics.PastePreview.BackgroundColor = Color.CornflowerBlue * 0.2f;
+                        ClipboardUtils.World = Gui.Logics.PastePreview;
                         for (int y = Selection.Y; y < Selection.Bottom; y++)
                             for (int x = Selection.X; x < Selection.Right; x++)
                             {
-                                Gui.Logics.SetTile(x, y, null);
-                                Gui.Logics.WireArray[x, y] = 0;
+                                SelectionWorld.SetTile(x, y, "");
+                                SelectionWorld.Wires[x, y] = 0;
                             }
                     }
                 }
@@ -134,7 +154,7 @@ namespace TerraLogic.Tools
         {
             if (NoSelection) return;
 
-            Rectangle rect = PanNZoom.WorldToScreen(Selection.Mul(16));
+            Rectangle rect = SelectionWorld.WorldToScreen(Selection.Mul(16));
 
             string str = $"{Selection.Width}x{Selection.Height}";
             if (!Dragging)
@@ -148,55 +168,78 @@ namespace TerraLogic.Tools
             spriteBatch.End();
 
             spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.Additive);
-            Graphics.FillRectangle(spriteBatch, rect, Color.CornflowerBlue.Div(4, true));
-            Graphics.DrawRectangle(spriteBatch, rect, Color.CornflowerBlue);
+            FillRectangle(spriteBatch, rect, Color.CornflowerBlue.Div(4, true));
+            DrawRectangle(spriteBatch, rect, Color.CornflowerBlue);
             spriteBatch.End();
         }
     }
     public class WirePath : Tool
     {
         public override string Id => "wirepath";
-        public override string DisplayName => $"Wire pathfinder (Mode: {(removeMode ? "remove" : "place")})\n" + GetDescription();
+        public override string DisplayName => $"Wire pathfinder (Mode: {(RemoveMode ? "remove" : "place")})\n" + GetDescription();
         public override bool ShowWires => true;
         public override bool DrawMouseIcon => false;
         public override bool AllowWireSelection => true;
 
-        ChunkArray2D newWires = new ChunkArray2D(4);
-        ChunkArray2D<bool> trackedWires = new ChunkArray2D<bool>(4);
-        ChunkArray2D<bool> otherWires = new ChunkArray2D<bool>(4);
+        World World, OtherWiresWorld;
+
+        ChunkArray2D NewWires = new ChunkArray2D(4);
+        ChunkArray2D<bool> TrackedWires = new ChunkArray2D<bool>(4);
+        ChunkArray2D<bool> OtherWires = new ChunkArray2D<bool>(4);
 
         Point A, B;
         DragState Dragging;
-        bool removeMode = false;
+        bool RemoveMode = false;
 
-        bool aStarError = false;
+        bool AStarError = false;
 
-        public override void MouseKeyUpdate(MouseKeys key, EventType @event, Point worldpos)
+        public override void MouseKeyUpdate(MouseKeys key, EventType @event, Point pos)
         {
+            Point worldpos = Point.Zero;
+
+            if (World is not null)
+                worldpos = World.ScreenToTiles(pos).ToPoint().Constrain(new(0, 0, World.Width, World.Height));
+
             if (key == MouseKeys.Left)
             {
-                if (removeMode)
+                if (RemoveMode)
                 {
-                    if (@event == EventType.Presssed) 
+                    if (@event == EventType.Presssed)
                     {
-                        if (!TerraLogic.Root.CurrentKeys.IsKeyDown(Keys.LeftShift)) newWires.Clear();
-                        foreach (Gui.WireSignal signal in Gui.Logics.TrackWire(worldpos, Gui.Logics.SelectedWire))
-                            newWires[signal.X, signal.Y] |= signal.Wire;
+                        if (Gui.Logics.HoverWorld != World)
+                        {
+                            NewWires.Clear();
+                            World = Gui.Logics.HoverWorld;
+                            worldpos = World.ScreenToTiles(pos).ToPoint();
+                        }
+
+                        if (!TerraLogic.Root.CurrentKeys.IsKeyDown(Keys.LeftShift)) 
+                            NewWires.Clear();
+                        foreach (Gui.WireSignal signal in World.TrackWire(worldpos, Gui.Logics.SelectedWire))
+                            NewWires[signal.X, signal.Y] |= signal.Wire;
                     }
                 }
 
                 else switch (@event)
                     {
                         case EventType.Presssed when Dragging == DragState.None:
+                            
                             if (A == default)
                             {
+                                World = Gui.Logics.HoverWorld;
+                                worldpos = World.ScreenToTiles(pos).ToPoint();
                                 A = worldpos;
                                 B = worldpos;
                                 Dragging = DragState.B;
-                                newWires.Clear();
+                                NewWires.Clear();
+
+                                if (OtherWiresWorld != World)
+                                    EnumOtherWires(World);
                             }
-                            else if (A == worldpos) Dragging = DragState.A;
-                            else if (B == worldpos) Dragging = DragState.B;
+                            else if (A == worldpos)
+                                Dragging = DragState.A;
+                            else if (B == worldpos)
+                                Dragging = DragState.B;
                             break;
                         case EventType.Released: Dragging = DragState.None; break;
                         case EventType.Hold:
@@ -213,53 +256,55 @@ namespace TerraLogic.Tools
             {
                 if (key == Keys.Enter)
                 {
-                    for (int y = 0; y < newWires.Height; y++)
-                        for (int x = 0; x < newWires.Width; x++)
+                    for (int y = 0; y < NewWires.Height; y++)
+                        for (int x = 0; x < NewWires.Width; x++)
                         {
-                            if (removeMode) Gui.Logics.WireArray[x, y] &= ~newWires[x, y];
-                            else Gui.Logics.WireArray[x, y] |= newWires[x, y];
+                            if (RemoveMode) World.Wires[x, y] &= ~NewWires[x, y];
+                            else World.Wires[x, y] |= NewWires[x, y];
                         }
                     Deselected();
                     WireColorChanged();
                 }
-                if (key == Keys.M) 
+                if (key == Keys.M)
                 { 
-                    removeMode = !removeMode; 
-                    newWires.Clear();
-                    if (!removeMode) WireColorChanged();
+                    RemoveMode = !RemoveMode; 
+                    NewWires.Clear();
+                    if (!RemoveMode)
+                        WireColorChanged();
                 }
             }
         }
 
         public override void Draw(SpriteBatch spriteBatch, bool selected)
         {
-            if (A == default && !removeMode) return;
+            if (World is null) return;
+            if (A == default && B == default && !RemoveMode) return;
 
-            Gui.Logics.DrawWires(newWires, BlendState.Additive);
+            World.DrawWires(NewWires, BlendState.Additive);
 
-            if (removeMode) return;
+            if (RemoveMode) return;
 
-            Rectangle a = PanNZoom.WorldToScreen(new Rectangle(A.X, A.Y, 1, 1).Mul(Gui.Logics.TileSize));
-            Rectangle b = PanNZoom.WorldToScreen(new Rectangle(B.X, B.Y, 1, 1).Mul(Gui.Logics.TileSize));
+            Rectangle a = World.WorldToScreen(new Rectangle(A.X, A.Y, 1, 1).Mul(Gui.Logics.TileSize));
+            Rectangle b = World.WorldToScreen(new Rectangle(B.X, B.Y, 1, 1).Mul(Gui.Logics.TileSize));
 
             spriteBatch.Begin();
             DrawRectangle(spriteBatch, a, Color.White);
-            DrawRectangle(spriteBatch, b, Color.White);
+            DrawRectangle(spriteBatch, b, Color.Black);
             DrawLine(spriteBatch,
                 a.Location.Add(new Point(a.Width / 2, a.Height / 2)),
-                b.Location.Add(new Point(b.Width / 2, b.Height / 2)), aStarError ? Color.Red : Color.White);
+                b.Location.Add(new Point(b.Width / 2, b.Height / 2)), AStarError ? Color.Red : Color.White);
             spriteBatch.End();
-
         }
 
         public override void Deselected()
         {
             Dragging = DragState.None;
-            A = default;
+            A = B = default;
+            World = null;
 
-            newWires.Clear();
-            trackedWires.Clear();
-            otherWires.Clear();
+            NewWires.Clear();
+            TrackedWires.Clear();
+            OtherWires.Clear();
         }
 
         public override void Selected()
@@ -269,23 +314,31 @@ namespace TerraLogic.Tools
 
         public override void WireColorChanged()
         {
-            otherWires.Clear();
-            for (int y = 0; y < Gui.Logics.WireArray.Height; y++)
-                for (int x = 0; x < Gui.Logics.WireArray.Width; x++)
+            if (OtherWiresWorld is not null)
+                EnumOtherWires(OtherWiresWorld);
+            if (A != default)
+                AStar();
+        }
+
+        private void EnumOtherWires(World world) 
+        {
+            OtherWires.Clear();
+            for (int y = 0; y < world.Wires.Height; y++)
+                for (int x = 0; x < world.Wires.Width; x++)
                 {
-                    if ((Gui.Logics.WireArray[x, y] & Gui.Logics.SelectedWire) != 0)
+                    if ((world.Wires[x, y] & Gui.Logics.SelectedWire) != 0)
                     {
-                        if (Gui.Logics.TileArray[x, y] is not Tiles.JunctionBox)
+                        if (world.Tiles[x, y] is not Tiles.JunctionBox)
                         {
-                            otherWires[x, y] = true;
-                            otherWires[x, y - 1] = true;
-                            otherWires[x + 1, y] = true;
-                            otherWires[x, y + 1] = true;
-                            otherWires[x - 1, y] = true;
+                            OtherWires[x, y] = true;
+                            OtherWires[x, y - 1] = true;
+                            OtherWires[x + 1, y] = true;
+                            OtherWires[x, y + 1] = true;
+                            OtherWires[x - 1, y] = true;
                         }
                     }
                 }
-            if (A != default) AStar();
+            OtherWiresWorld = world;
         }
 
         private string GetDescription()
@@ -293,11 +346,11 @@ namespace TerraLogic.Tools
 
             if (!IsSelected) return "";
 
-            string line = $"Press M to change mode to {(removeMode ? "Place" : "Remove")}\n";
+            string line = $"Press M to change mode to {(RemoveMode ? "Place" : "Remove")}\n";
             if (Gui.Logics.SelectedWire == 0) line += "Select wire colors to plan";
             else 
             {
-                if (removeMode)
+                if (RemoveMode)
                 {
                     line += "Left-click on a wire to select it\nLeftShist+Left Click to select multiple groups";
                 }
@@ -314,32 +367,32 @@ namespace TerraLogic.Tools
 
         public void AStar()
         {
-            newWires.Clear();
-            trackedWires.Clear();
-            aStarError = false;
+            NewWires.Clear();
+            TrackedWires.Clear();
+            AStarError = false;
 
             if (Gui.Logics.SelectedWire == 0) return;
 
-            foreach (Gui.WireSignal signal in Gui.Logics.TrackWire(Around4(A), Gui.Logics.SelectedWire)) trackedWires[signal.X, signal.Y] = true;
-            foreach (Gui.WireSignal signal in Gui.Logics.TrackWire(Around4(B), Gui.Logics.SelectedWire)) trackedWires[signal.X, signal.Y] = true;
+            foreach (Gui.WireSignal signal in Gui.Logics.HoverWorld.TrackWire(Around4(A), Gui.Logics.SelectedWire)) TrackedWires[signal.X, signal.Y] = true;
+            foreach (Gui.WireSignal signal in Gui.Logics.HoverWorld.TrackWire(Around4(B), Gui.Logics.SelectedWire)) TrackedWires[signal.X, signal.Y] = true;
 
             Point[] path = AStarPathfinding.AStar(A, B, TimeSpan.FromMilliseconds(100), IsPassable);
-            if (path is null) { aStarError = true; return; }
+            if (path is null) { AStarError = true; return; }
             foreach (Point pos in path)
             {
-                newWires[pos.X, pos.Y] = Gui.Logics.SelectedWire;
+                NewWires[pos.X, pos.Y] = Gui.Logics.SelectedWire;
             }
         }
 
         private bool IsPassable(AStarPathfinding.Side sideIn, Point pos, AStarPathfinding.Side sideOut)
         {
             if (pos.X < 0 || pos.Y < 0) return false;
-            if (Gui.Logics.TileArray[pos.X, pos.Y] is Tiles.JunctionBox box) return JunctionPassable(sideIn, sideOut, box);
-            return (Gui.Logics.TileArray[pos.X, pos.Y] is null && !otherWires[pos.X, pos.Y])
-                || pos == B
-                || trackedWires[pos.X, pos.Y]
-                || trackedWires[pos.X, pos.Y + 1] || trackedWires[pos.X, pos.Y - 1]
-                || trackedWires[pos.X + 1, pos.Y] || trackedWires[pos.X - 1, pos.Y];
+            if (Gui.Logics.HoverWorld.Tiles[pos.X, pos.Y] is Tiles.JunctionBox box) return JunctionPassable(sideIn, sideOut, box);
+            return (Gui.Logics.HoverWorld.Tiles[pos.X, pos.Y] is null && !OtherWires[pos.X, pos.Y])
+                || pos == B || pos == A
+                || TrackedWires[pos.X, pos.Y]
+                || TrackedWires[pos.X, pos.Y + 1] || TrackedWires[pos.X, pos.Y - 1]
+                || TrackedWires[pos.X + 1, pos.Y] || TrackedWires[pos.X - 1, pos.Y];
         }
 
         private bool JunctionPassable(AStarPathfinding.Side sideIn, AStarPathfinding.Side sideOut, JunctionBox box)
@@ -384,10 +437,10 @@ namespace TerraLogic.Tools
         public override bool AllowWireSelection => true;
         public override bool DrawMouseIcon => false;
 
-        public override void MouseKeyUpdate(MouseKeys key, EventType @event, Point worldpos)
+        public override void MouseKeyUpdate(MouseKeys key, EventType @event, Point pos)
         {
             if (key == MouseKeys.Left && @event == EventType.Presssed)
-                Gui.Logics.SignalWire(worldpos, Gui.Logics.SelectedWire);
+                Gui.Logics.HoverWorld.SignalWire(Gui.Logics.HoverWorld.ScreenToTiles(pos).ToPoint(), Gui.Logics.SelectedWire);
         }
     }
 

@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 
@@ -17,12 +18,17 @@ namespace TerraLogic.Tiles
 
         static Texture2D Sprite;
 
-        public override void Draw(Rectangle rect, bool isScreenPos = false)
+        public override void Draw(TransformedGraphics graphics)
         {
-            TerraLogic.SpriteBatch.DrawTileSprite(Sprite, State?1:0, 0, isScreenPos? rect: PanNZoom.WorldToScreen(rect), Color.White);
+            graphics.DrawTileSprite(Sprite, State?1:0, 0, Vector2.Zero, Color.White);
         }
 
-        internal override Tile CreateTile(string data, bool preview)
+        public override Tile Copy()
+        {
+            return new Switch() { State = State };
+        }
+
+        public override Tile CreateTile(string data, bool preview)
         {
             return new Switch() { State = data == "+" };
         }
@@ -37,6 +43,16 @@ namespace TerraLogic.Tiles
         internal override string GetData()
         {
             return State ? "+" : null;
+        }
+
+        public override void Save(BinaryWriter writer)
+        {
+            writer.Write(State);
+        }
+
+        public override void Load(BinaryReader reader)
+        {
+            State = reader.ReadBoolean();
         }
 
         public override void LoadContent(ContentManager content)

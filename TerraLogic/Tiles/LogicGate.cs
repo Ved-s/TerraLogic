@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using TerraLogic.GuiElements;
 
@@ -23,7 +24,7 @@ namespace TerraLogic.Tiles
         public override string Id => "gate" + GateName;
         public override string DisplayName => $"Logic Gate ({GateName.ToUpper()})";
 
-        public override string[] PreviewVariants => new string[] { "!" };
+        public override string[] PreviewDataVariants => new string[] { "!" };
 
         public override bool NeedsContinuousUpdate => true;
 
@@ -58,16 +59,15 @@ namespace TerraLogic.Tiles
                 }
             }
         }
-        public override void Draw(Rectangle rect, bool isScreenPos = false)
+        public override void Draw(TransformedGraphics graphics)
         {
-            rect = isScreenPos ? rect : PanNZoom.WorldToScreen(rect);
-            if (IsFaulty) TerraLogic.SpriteBatch.DrawTileSprite(Sprite, 2, GateId, rect, Color.White);
-            else TerraLogic.SpriteBatch.DrawTileSprite(Sprite, (State | Display) ? 1 : 0, GateId, rect, Color.White);
+            if (IsFaulty) graphics.DrawTileSprite(Sprite, 2, GateId, Vector2.Zero, Color.White);
+            else graphics.DrawTileSprite(Sprite, (State | Display) ? 1 : 0, GateId, Vector2.Zero, Color.White);
 
             if (RedFade > 0)
             {
                 Color c = Color.Red * (RedFade / 120f);
-                Graphics.DrawRectangle(TerraLogic.SpriteBatch, rect, c);
+                //Graphics.DrawRectangle(TerraLogic.SpriteBatch, rect, c);
                 RedFade--;
             }
         }
@@ -99,9 +99,9 @@ namespace TerraLogic.Tiles
             bool foundFaulty = false;
             bool faultyTriggered = false;
 
-            while (Gui.Logics.TileArray[Pos.X, scanPos] is LogicLamp)
+            while (World.Tiles[Pos.X, scanPos] is LogicLamp)
             {
-                LogicLamp lamp = Gui.Logics.TileArray[Pos.X, scanPos] as LogicLamp;
+                LogicLamp lamp = World.Tiles[Pos.X, scanPos] as LogicLamp;
                 switch (lamp.State)
                 {
                     case LogicLamp.LampState.Off: lamps.Add(false); break;
@@ -118,9 +118,18 @@ namespace TerraLogic.Tiles
             LampStateChanged(lamps.ToArray(), foundFaulty, faultyTriggered);
         }
 
-        internal override Tile CreateTile(string data, bool preview)
+        public override Tile Copy()
         {
-            LogicGate t = (LogicGate)Activator.CreateInstance(this.GetType());
+            LogicGate t = (LogicGate)Activator.CreateInstance(GetType());
+            t.State = State;
+            t.NewState = State;
+            t.IsFaulty = IsFaulty;
+            return t;
+        }
+
+        public override Tile CreateTile(string data, bool preview)
+        {
+            LogicGate t = (LogicGate)Activator.CreateInstance(GetType());
             if (data is not null && data.Length >= 1)
             {
                 if (data[0] == '!') { t.Display = true; data = data.Substring(1); }
@@ -135,6 +144,22 @@ namespace TerraLogic.Tiles
         internal override string GetData()
         {
             return (IsFaulty) ? "?" : (State) ? "+" : null;
+        }
+
+        public override void Save(BinaryWriter writer)
+        {
+            byte v = Util.ZipBools(State, IsFaulty, NewState);
+            writer.Write(v);
+        }
+
+        public override void Load(BinaryReader reader)
+        {
+            byte v = reader.ReadByte();
+            bool[] values = Util.UnzipBools(v);
+            State = values[0];
+            IsFaulty = values[1];
+            NewState = values[2];
+            
         }
     }
 }

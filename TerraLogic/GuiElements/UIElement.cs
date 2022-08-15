@@ -68,7 +68,6 @@ namespace TerraLogic.GuiElements
                 Graphics.DrawRectangle(spriteBatch, modal.Bounds, Color.Yellow);
                 spriteBatch.DrawStringShadedCentered(modal.Font, "modal", new Rectangle(modal.Bounds.X, modal.Bounds.Y, modal.Bounds.Width, 1), Color.White, Color.Black);
             }
-
         }
 
         public virtual void Update()
@@ -107,6 +106,8 @@ namespace TerraLogic.GuiElements
             //Debug.WriteLine($"Recalculated size for {GetType().Name} \"{Name}\": {Bounds.X},{Bounds.Y} {Bounds.Width}x{Bounds.Height}");
 
         }
+
+        public virtual void OnActiveChanged() { }
 
         protected internal virtual void KeyStateUpdate(Keys key, EventType @event)
         {
@@ -255,7 +256,9 @@ namespace TerraLogic.GuiElements
         private SpriteFont font = null;
         private bool visible = true;
 
+        public bool Active => Root?.Active == this;
         public bool Hover { get => Root.Hover != null && Root.Hover == this; }
+
         public virtual Pos X { get => x; set { x = value ?? 0; PositionRecalculateRequired = true; } }
         public virtual Pos Y { get => y; set { y = value ?? 0; PositionRecalculateRequired = true; } }
         public virtual Pos Width { get => w; set { w = value ?? 0; PositionRecalculateRequired = true; } }

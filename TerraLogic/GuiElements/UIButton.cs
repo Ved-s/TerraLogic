@@ -20,6 +20,8 @@ namespace TerraLogic.GuiElements
             textOffset.X = (int)textOffset.X;
             textOffset.Y = (int)textOffset.Y;
 
+            textOffset += new Vector2(0, 2);
+
             bool clicked = Hover && Root.CurrentMouseKeys.LeftButton == ButtonState.Pressed && ClickColors.HasValue;
 
             if (Hover)

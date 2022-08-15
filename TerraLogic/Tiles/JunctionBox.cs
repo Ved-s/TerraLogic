@@ -22,12 +22,11 @@ namespace TerraLogic.Tiles
             Sprite = content.Load<Texture2D>("Tiles/JunctionBox");
         }
 
-        public override void Draw(Rectangle rect, bool isScreenPos = false)
+        public override void Draw(TransformedGraphics graphics)
         {
-            rect = isScreenPos ? rect : PanNZoom.WorldToScreen(rect);
             Rectangle spriteRect = new Rectangle((int)Type * Gui.Logics.TileSize.X, 0, Gui.Logics.TileSize.X, Gui.Logics.TileSize.Y);
 
-            TerraLogic.SpriteBatch.Draw(Sprite, rect, spriteRect, Color.White);
+            graphics.Draw(Sprite, Vector2.Zero, spriteRect, Color.White);
         }
 
         public override void RightClick(bool held, bool preview)
@@ -37,7 +36,12 @@ namespace TerraLogic.Tiles
             if (Type > JunctionType.TR) Type = 0;
         }
 
-        internal override Tile CreateTile(string data, bool preview)
+        public override Tile Copy()
+        {
+            return new JunctionBox() { Type =  Type };
+        }
+
+        public override Tile CreateTile(string data, bool preview)
         {
             return new JunctionBox() { Type = int.TryParse(data, out int type)? (JunctionType)type : JunctionType.Cross };
         }

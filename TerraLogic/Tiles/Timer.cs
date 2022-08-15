@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 
@@ -12,7 +13,7 @@ namespace TerraLogic.Tiles
     {
         public override string Id => "timer";
 
-        public override string[] PreviewVariants => new string[] { "-0", "-1", "-2", "-3", "-4" };
+        public override string[] PreviewDataVariants => new string[] { "-0", "-1", "-2", "-3", "-4" };
         public override string DisplayName => $"{Intervals[(int)Type]} Second Timer";
         public override bool NeedsContinuousUpdate => true;
 
@@ -25,9 +26,9 @@ namespace TerraLogic.Tiles
         internal bool State = false;
         internal uint Counter = 0;
 
-        public override void Draw(Rectangle rect, bool isScreenPos = false)
+        public override void Draw(TransformedGraphics graphics)
         {
-            TerraLogic.SpriteBatch.DrawTileSprite(Sprite, (int)Type, State?1:0, isScreenPos ? rect : PanNZoom.WorldToScreen(rect), Color.White);
+            graphics.DrawTileSprite(Sprite, (int)Type, State?1:0, Vector2.Zero, Color.White);
         }
 
         public override void Update()
@@ -44,7 +45,7 @@ namespace TerraLogic.Tiles
             State = !State;
         }
 
-        public override void WireSignal(int wire, Point origin)
+        public override void WireSignal(int wire, Point origin, Point inputPosition)
         {
             if (wire.Bits() % 2 == 1)
                 State = !State;
@@ -55,9 +56,19 @@ namespace TerraLogic.Tiles
             Sprite = content.Load<Texture2D>("Tiles/Timer");
         }
 
-        internal override Tile CreateTile(string data, bool preview)
+        public override Tile Copy()
         {
-            if (data.Length < 2) return new Timer();
+            return new Timer() 
+            {
+                Type = Type,
+                State = State,
+                Counter = Counter,
+            };
+        }
+
+        public override Tile CreateTile(string data, bool preview)
+        {
+            if (data is null || data.Length < 2) return new Timer();
 
             bool state = data[0] == '+';
             int type;
@@ -69,6 +80,21 @@ namespace TerraLogic.Tiles
         internal override string GetData()
         {
             return (State? "+" : "-") + ((int)Type).ToString();
+        }
+
+        public override void Save(BinaryWriter writer)
+        {
+            byte state = (byte)(((int)Type << 1) | (State ? 1 : 0));
+            writer.Write(state);
+            writer.Write(Counter);
+        }
+
+        public override void Load(BinaryReader reader)
+        {
+            byte state = reader.ReadByte();
+            State = (state & 1) != 0;
+            Type = (TimerType)((state & 0b11111110) >> 1);
+            Counter = reader.ReadUInt32();
         }
 
         internal enum TimerType { Quarter, Half, Sec1, Sec3, Sec5 }

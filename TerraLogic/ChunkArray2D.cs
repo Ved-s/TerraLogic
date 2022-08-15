@@ -128,7 +128,6 @@ namespace TerraLogic
         {
             Dictionary<Point, string> chunks = new Dictionary<Point, string>();
 
-
             int newChunkSize = 0;
             Match header = HeaderRegex.Match(data);
             if (!header.Success) return false;
@@ -206,33 +205,43 @@ namespace TerraLogic
         T[,][,] ChunkMap;
         int ChunkSize;
 
+        private T DefaultValue;
+
         public int Width { get => ChunkMap.GetLength(0) * ChunkSize; }
         public int Height { get => ChunkMap.GetLength(1) * ChunkSize; }
 
-        public ChunkArray2D(int chunkSize)
+        public ChunkArray2D(int chunkSize, T @default = default)
         {
             ChunkSize = chunkSize;
+            DefaultValue = @default;
             ChunkMap = new T[0, 0][,];
         }
 
         public T QuickUnsafeGet(int x, int y)
         {
             T[,] ch = ChunkMap[x / ChunkSize, y / ChunkSize];
-            if (ch is null) return default;
+            if (ch is null) return DefaultValue;
             else return ch[x % ChunkSize, y % ChunkSize];
+        }
+
+        public void QuickUnsafeSet(int x, int y, T value)
+        {
+            T[,] ch = ChunkMap[x / ChunkSize, y / ChunkSize];
+            if (ch is null) return;
+            ch[x % ChunkSize, y % ChunkSize] = value;
         }
 
         public T this[int x, int y]
         {
             get
             {
-                if (x < 0 || y < 0) return default;
+                if (x < 0 || y < 0) return DefaultValue;
                 int chunkX = x / ChunkSize;
                 int chunkY = y / ChunkSize;
 
                 if (chunkY >= ChunkMap.GetLength(1)
                     || chunkX >= ChunkMap.GetLength(0)
-                    || ChunkMap[chunkX, chunkY] is null) return default;
+                    || ChunkMap[chunkX, chunkY] is null) return DefaultValue;
 
                 return ChunkMap[chunkX, chunkY][x % ChunkSize, y % ChunkSize];
             }
@@ -247,7 +256,14 @@ namespace TerraLogic
                     ChunkMap = ResizeArray(ChunkMap, Math.Max(ChunkMap.GetLength(0), chunkX + 1), Math.Max(ChunkMap.GetLength(1), chunkY + 1));
 
                 if (ChunkMap[chunkX, chunkY] is null)
-                    ChunkMap[chunkX, chunkY] = new T[ChunkSize, ChunkSize];
+                {
+                    T[,] chunk = new T[ChunkSize, ChunkSize];
+                    ChunkMap[chunkX, chunkY] = chunk;
+
+                    for (int i = 0; i < ChunkSize; i++)
+                        for (int j = 0; j < ChunkSize; j++)
+                            chunk[i, j] = DefaultValue;
+                }
 
                 ChunkMap[chunkX, chunkY][x % ChunkSize, y % ChunkSize] = value;
             }

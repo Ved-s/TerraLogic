@@ -1,7 +1,9 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
+using System.Buffers;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using TerraLogic.GuiElements;
@@ -53,11 +55,6 @@ namespace TerraLogic
             spriteBatch.DrawString(font, text, pos, textColor, angle, Vector2.Zero, 1, SpriteEffects.None, 0);
         }
 
-        public static void DrawTileSprite(this SpriteBatch spriteBatch, Texture2D sprite, int spriteX, int spriteY, Rectangle destinationRectangle, Color color, int tileWidth = 1, int tileHeight = 1)
-        {
-            spriteBatch.Draw(sprite, destinationRectangle, new Rectangle(spriteX * tileWidth * Gui.Logics.TileSize.X, spriteY * tileHeight * Gui.Logics.TileSize.Y, tileWidth * Gui.Logics.TileSize.X, tileHeight * Gui.Logics.TileSize.Y), color);
-        }
-
         public static void DrawStringShadedCentered(this SpriteBatch spriteBatch, SpriteFont font, string text, Rectangle rect, Color textColor, Color shadowColor)
         {
             Point size = font.MeasureString(text).ToPoint();
@@ -83,6 +80,97 @@ namespace TerraLogic
                 value >>= 1;
             }
             return bits;
+        }
+
+        public static Rectangle Intersection(this Rectangle rect1, Rectangle rect2)
+        {
+            Point minBR = new(Math.Min(rect1.Right, rect2.Right), Math.Min(rect1.Bottom, rect2.Bottom));
+            Point maxTL = new(Math.Max(rect1.Left, rect2.Left), Math.Max(rect1.Top, rect2.Top));
+
+            return new Rectangle()
+            {
+                X = maxTL.X,
+                Y = maxTL.Y,
+                Width = minBR.X - maxTL.X,
+                Height = minBR.Y - maxTL.Y
+            };
+        }
+
+        public static void CopyExact(this Stream from, Stream to, int copyLength, int bufferLength = 81920) 
+        {
+            if (from.CanSeek)
+            {
+                long length = from.Length;
+                long position = from.Position;
+                if (length <= position)
+                {
+                    bufferLength = 1;
+                }
+                else
+                {
+                    long diff = length - position;
+                    if (diff > 0L)
+                    {
+                        bufferLength = (int)Math.Min((long)bufferLength, diff);
+                    }
+                }
+            }
+
+            byte[] array = ArrayPool<byte>.Shared.Rent(bufferLength);
+            try
+            {
+                int read;
+                while (copyLength > 0)
+                {
+                    read = from.Read(array, 0, Math.Min(array.Length, copyLength));
+                    if (read == 0) break;
+                    copyLength -= read;
+                    to.Write(array, 0, read);
+                }
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(array, false);
+            }
+        }
+
+        public static bool SequenceStartsWith<T>(this IEnumerable<T> seq, IEnumerable<T> compareTo) 
+        {
+            IEnumerator<T> seqEnum = seq.GetEnumerator();
+            IEnumerator<T> compareToEnum = compareTo.GetEnumerator();
+
+            while (true)
+            {
+                bool seqMoved = seqEnum.MoveNext();
+                bool compareToMoved = compareToEnum.MoveNext();
+
+                if (!compareToMoved) break;
+                if (!seqMoved) return false;
+
+                if (seqEnum.Current is null)
+                {
+                    if (compareToEnum.Current is null) continue;
+                    if (!compareToEnum.Current.Equals(seqEnum.Current)) return false;
+                }
+                else if (!seqEnum.Current.Equals(compareToEnum.Current)) return false;
+            }
+            return true;
+        }
+
+        public static bool IsNullEmptyOrWhitespace(this string str)
+            => string.IsNullOrWhiteSpace(str) || string.IsNullOrEmpty(str);
+
+        public static Point Constrain(this Point p, Rectangle rect) 
+        {
+            if (p.X < rect.Left) 
+                p.X = rect.Left;
+            if (p.Y < rect.Top)
+                p.Y = rect.Top;
+            if (p.X >= rect.Right)
+                p.X = rect.Right - 1;
+            if (p.Y >= rect.Bottom)
+                p.Y = rect.Bottom - 1;
+            return p;
         }
     }
 }

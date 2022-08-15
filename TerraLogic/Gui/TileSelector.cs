@@ -25,6 +25,7 @@ namespace TerraLogic.Gui
             new string[] { "logicLamp*" },
             new string[] { "timer*" },
             new string[] { "gate*" },
+            new string[] { "compact*" }
         };
         static List<Dictionary<string, Tile>> LoadedTileGroups = new List<Dictionary<string, Tile>>();
         static List<string> GroupIcon = new List<string>();
@@ -40,7 +41,6 @@ namespace TerraLogic.Gui
 
             foreach (string[] group in TileGroups)
             {
-
                 HashSet<string> matchedTiles = new HashSet<string>();
 
                 foreach (string tilemask in group)
@@ -64,10 +64,7 @@ namespace TerraLogic.Gui
                 LoadedTileGroups.Add(new Dictionary<string, Tile>() { { tile, Logics.TilePreviews[tile] } });
                 GroupIcon.Add(tile);
             }
-
         }
-
-
 
         public override void Update()
         {
@@ -150,11 +147,19 @@ namespace TerraLogic.Gui
             }
             else if (Logics.SelectedTileId == name) spriteBatch.Draw(TerraLogic.Pixel, new Rectangle(Bounds.X + xpos, Bounds.Y, 32, 32), new Color(48, 48, 48));
 
-            int sizeDiv = tile is null ? 1 : Math.Max(tile.Size.X, tile.Size.Y);
+            float scale = tile is null ? 1 : 1f/Math.Max(tile.Size.X, tile.Size.Y);
 
-            Rectangle rect = new Rectangle(Bounds.X + xpos + 8, Bounds.Y + 8, (16 * (tile?.Size.X ?? 1)) / sizeDiv, (16 * (tile?.Size.Y ?? 1)) / sizeDiv);
+            Vector2 pos = new(Bounds.X + xpos + 8, Bounds.Y + 8);
 
-            tile.Draw(rect, true);
+            if (tile.Size.X != tile.Size.Y)
+            {
+                if (tile.Size.X > tile.Size.Y) 
+                    pos.Y += (tile.Size.X - tile.Size.Y) / 2f * Logics.TileSize.Y * scale;
+                else
+                    pos.X += (tile.Size.Y - tile.Size.X) / 2f * Logics.TileSize.X * scale;
+            }
+
+            tile.Draw(new(pos, scale));
         }
 
         protected internal override void MouseKeyStateUpdate(MouseKeys key, EventType @event, Point pos)

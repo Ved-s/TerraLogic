@@ -21,7 +21,10 @@ namespace TerraLogic.GuiElements
 
         public new Point MousePosition;
 
-        public new UIElement Hover;
+        public new UIElement Hover { get; private set; }
+        public new UIElement Active { get; private set; }
+
+        public Action<UIElement, UIElement> OnGlobalActiveChanged;
 
         internal bool Init = false;
 
@@ -70,15 +73,17 @@ namespace TerraLogic.GuiElements
             if (CurrentMouseKeys.XButton1 == ButtonState.Pressed)     { mouseKeys.Add(MouseKeys.XButton1); anyMouseKey = true;  }
             if (CurrentMouseKeys.XButton2 == ButtonState.Pressed)     { mouseKeys.Add(MouseKeys.XButton2); anyMouseKey = true;  }
             changedMouseKeys.UnionWith(mouseKeys);
-
-            
-
             foreach (MouseKeys key in changedMouseKeys)
             {
                 int keyNow = mouseKeys.Contains(key) ? 1 : 0;
                 int keyBefore = OldMouseKeys.Contains(key) ? 1 : 0;
                 EventType n = (EventType)(keyBefore << 1 | keyNow);
-                if (TerraLogic.Instance.IsActive) Hover?.MouseKeyStateUpdate(key, n, MousePosition.Subtract(Hover.Bounds.Location));
+                if (TerraLogic.Instance.IsActive)
+                {
+                    Hover?.MouseKeyStateUpdate(key, n, MousePosition.Subtract(Hover.Bounds.Location));
+                    if (key == MouseKeys.Left && n == EventType.Presssed)
+                        SetActive(Hover);
+                }
                 if (n == EventType.Released) OldMouseKeys.Remove(key);
                 else if (n == EventType.Presssed) OldMouseKeys.Add(key);
             }
@@ -118,11 +123,20 @@ namespace TerraLogic.GuiElements
                 spriteBatch.DrawString(Font, Hover.HoverText, pos + new Vector2(1, 0), Color.Black);
                 spriteBatch.DrawString(Font, Hover.HoverText, pos + new Vector2(0, 0), Color.White);
             }
-
             spriteBatch.End();
-
         }
 
+        public void SetActive(UIElement element)
+        {
+            if (element is UIRoot) element = null;
+
+            UIElement previousActive = Active;
+            Active = element;
+
+            if (previousActive != null) previousActive.OnActiveChanged();
+            if (Active != null) Active.OnActiveChanged();
+            OnGlobalActiveChanged?.Invoke(previousActive, Active);
+        }
 
     }
     public enum EventType 

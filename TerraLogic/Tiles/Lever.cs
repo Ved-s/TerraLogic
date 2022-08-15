@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 
@@ -14,35 +15,50 @@ namespace TerraLogic.Tiles
         public override Point Size => new Point(2,2);
         public override string DisplayName => "Lever";
 
-        bool state = false;
+        bool State = false;
 
         static Texture2D Sprite;
 
-        public override void Draw(Rectangle rect, bool isScreenPos = false)
+        public override void Draw(TransformedGraphics graphics)
         {
-            TerraLogic.SpriteBatch.DrawTileSprite(Sprite, state?1:0, 0, isScreenPos? rect: PanNZoom.WorldToScreen(rect), Color.White,2, 2);
+            graphics.DrawTileSprite(Sprite, State?1:0, 0, Vector2.Zero, Color.White,2, 2);
         }
 
-        internal override Tile CreateTile(string data, bool preview)
+        public override Tile Copy()
         {
-            return new Lever() { state = data == "+" };
+            return new Lever() { State = State };
+        }
+
+        public override Tile CreateTile(string data, bool preview)
+        {
+            return new Lever() { State = data == "+" };
         }
 
         public override void RightClick(bool held, bool preview)
         {
             if (held) return;
-            state = !state;
+            State = !State;
             SendSignal();
         }
 
         internal override string GetData()
         {
-            return state ? "+" : null;
+            return State ? "+" : null;
         }
 
         public override void LoadContent(ContentManager content)
         {
             Sprite = content.Load<Texture2D>("Tiles/Lever");
+        }
+
+        public override void Save(BinaryWriter writer)
+        {
+            writer.Write(State);
+        }
+
+        public override void Load(BinaryReader reader)
+        {
+            State = reader.ReadBoolean();
         }
     }
 }

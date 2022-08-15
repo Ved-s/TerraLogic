@@ -3,13 +3,14 @@ using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
+using System.IO;
 
 namespace TerraLogic.Tiles
 {
     class LogicLamp : Tile
     {
         public override string Id => "logicLamp";
-        public override string[] PreviewVariants => new string[] { "+", "-", "?" };
+        public override string[] PreviewDataVariants => new string[] { "+", "-", "?" };
 
         public override string DisplayName => $"Logic Gate Lamp ({State})";
 
@@ -17,26 +18,26 @@ namespace TerraLogic.Tiles
 
         internal LampState State;
 
-        public override void Draw(Rectangle rect, bool isScreenPos = false)
+        public override void Draw(TransformedGraphics graphics)
         {
-            TerraLogic.SpriteBatch.DrawTileSprite(
+            graphics.DrawTileSprite(
                 Sprite, Math.Min((int)State, 2), 0,
-                isScreenPos ? rect : PanNZoom.WorldToScreen(rect), Color.White);
+                Vector2.Zero, Color.White);
         }
 
         public override void PlacedInWorld()
         {
             int scanPos = Pos.Y;
-            while (Gui.Logics.TileArray[Pos.X, scanPos] is LogicLamp) scanPos--;
+            while (World.Tiles[Pos.X, scanPos] is LogicLamp) scanPos--;
             scanPos++;
 
             List<bool> lamps = new List<bool>();
             bool foundFaulty = false;
             bool faultyTriggered = false;
 
-            while (Gui.Logics.TileArray[Pos.X, scanPos] is LogicLamp)
+            while (World.Tiles[Pos.X, scanPos] is LogicLamp)
             {
-                LogicLamp lamp = Gui.Logics.TileArray[Pos.X, scanPos] as LogicLamp;
+                LogicLamp lamp = World.Tiles[Pos.X, scanPos] as LogicLamp;
                 switch (lamp.State)
                 {
                     case LampState.Off: lamps.Add(false); break;
@@ -47,7 +48,7 @@ namespace TerraLogic.Tiles
                 scanPos++;
             }
 
-            if (Gui.Logics.TileArray[Pos.X, scanPos] is LogicGate lg) lg.LampStateChanged(lamps.ToArray(), foundFaulty, faultyTriggered);
+            if (World.Tiles[Pos.X, scanPos] is LogicGate lg) lg.LampStateChanged(lamps.ToArray(), foundFaulty, faultyTriggered);
         }
 
         public override void LoadContent(ContentManager content)
@@ -55,7 +56,7 @@ namespace TerraLogic.Tiles
             Sprite = content.Load<Texture2D>("Tiles/LogicLamp");
         }
 
-        public override void WireSignal(int wire, Point from)
+        public override void WireSignal(int wire, Point from, Point inputPosition)
         {
             if (wire.Bits() % 2 == 1)
                 switch (State)
@@ -66,7 +67,12 @@ namespace TerraLogic.Tiles
                 }
         }
 
-        internal override Tile CreateTile(string data, bool preview)
+        public override Tile Copy()
+        {
+            return new LogicLamp() { State = State };
+        }
+
+        public override Tile CreateTile(string data, bool preview)
         {
             return new LogicLamp() { State = (data == "+") ? LampState.On : (data == "?") ? LampState.Faulty : LampState.Off };
         }
@@ -79,9 +85,9 @@ namespace TerraLogic.Tiles
             bool foundFaulty = false;
             bool faultyTriggered = false;
 
-            while (Gui.Logics.TileArray[Pos.X, scanPos] is LogicLamp)
+            while (World.Tiles[Pos.X, scanPos] is LogicLamp)
             {
-                LogicLamp lamp = Gui.Logics.TileArray[Pos.X, scanPos] as LogicLamp;
+                LogicLamp lamp = World.Tiles[Pos.X, scanPos] as LogicLamp;
                 switch (lamp.State)
                 {
                     case LampState.Off: lamps.Add(false); break;
@@ -92,13 +98,23 @@ namespace TerraLogic.Tiles
                 scanPos++;
             }
 
-            if (Gui.Logics.TileArray[Pos.X, scanPos] is LogicGate lg) lg.LampStateChanged(lamps.ToArray(), foundFaulty, faultyTriggered);
+            if (World.Tiles[Pos.X, scanPos] is LogicGate lg) lg.LampStateChanged(lamps.ToArray(), foundFaulty, faultyTriggered);
 
         }
 
         internal override string GetData()
         {
             return (State == LampState.On) ? "+" : (State == LampState.Faulty) ? "?" : null;
+        }
+
+        public override void Save(BinaryWriter writer)
+        {
+            writer.Write((byte)State);
+        }
+
+        public override void Load(BinaryReader reader)
+        {
+            State = (LampState)reader.ReadByte();
         }
 
         internal enum LampState { Off, On, Faulty, FaultyTriggered }

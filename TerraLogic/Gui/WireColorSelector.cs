@@ -41,7 +41,7 @@ namespace TerraLogic.Gui
 
                 Rectangle rect = new Rectangle(3, ypos, 12, 12).WithOffset(Bounds.Location);
 
-                if (!Logics.GetWire(Logics.SelectedWire, (byte)i))
+                if (!World.GetWire(Logics.SelectedWire, (byte)i))
                 {
                     c.R /= 2;
                     c.G /= 2;

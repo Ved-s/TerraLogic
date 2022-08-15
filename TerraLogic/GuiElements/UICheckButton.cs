@@ -16,7 +16,6 @@ namespace TerraLogic.GuiElements
         }
 
         public override Colors Colors { get => Checked ? base.Colors.Swapped() : base.Colors; set => base.Colors = value; }
-
         public override Colors HoverColors { get => Checked ? base.HoverColors.Swapped() : base.Colors; set => base.HoverColors = value; }
 
         public virtual bool Checked { get; set; }

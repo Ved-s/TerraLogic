@@ -146,5 +146,26 @@ namespace TerraLogic
             Point max = new Point(Math.Max(a.X, b.X), Math.Max(a.Y, b.Y));
             return new Rectangle(min.X, min.Y, max.X - min.X, max.Y - min.Y);
         }
+
+
+        public static byte ZipBools(params bool[] bools) 
+        {
+            byte b = 0;
+            foreach (bool bo in bools)
+            {
+                b = (byte)((b << 1) | (bo ? 1 : 0));
+            }
+            return b;
+        }
+        public static bool[] UnzipBools(byte b)
+        {
+            bool[] bools = new bool[8];
+            for (int i = 0; i < 8; i++)
+            {
+                bools[i] = (b & 1) != 0;
+                b = (byte)(b >> 1);
+            }
+            return bools;
+        }
     }
 }

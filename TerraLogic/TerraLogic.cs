@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
 using System.Diagnostics;
+using System.Globalization;
 using TerraLogic.GuiElements;
 
 namespace TerraLogic
@@ -71,6 +72,7 @@ namespace TerraLogic
                                 BackColor = new Color(0,0,0,64),
                                 TextColor = Color.Lime,
                                 Font = Consolas8,
+                                Visible = false,
                                 OnUpdate = (e) =>
                                 {
                                     e.Text =
@@ -78,6 +80,10 @@ namespace TerraLogic
                                         $"{Instance.TickTimeMS:0.000} ms tick\n" +
                                         $"{Gui.Logics.WireUpdateWatch.Elapsed.TotalMilliseconds:0.000} ms wire\n" +
                                         $"{Util.MakeSize((ulong)ThisProcess.PrivateMemorySize64)} priv";
+                                },
+                                OnKeyUpdated = (e, k, t) => 
+                                {
+                                    if (k == Keys.F10 && t == EventType.Presssed) e.Visible = !e.Visible;
                                 }
                             },
                             new Gui.TileSelector("tileSelect"),
@@ -99,6 +105,7 @@ namespace TerraLogic
                             {
                                 Y = Pos.Height("..") - Pos.Height(),
                             },
+                            new Gui.CompactSizeSelector("sizeSelect"),
                             new UIButton("saveData")
                             {
                                 X = Pos.Width("..") - Pos.Width() - 5,
@@ -115,7 +122,7 @@ namespace TerraLogic
                                     caller.GetElement("../loadData").Visible = false;
                                     (caller.GetElement("../fileSelect") as Gui.FileSelector).ShowDialog(true, (cancel, file) =>
                                     {
-                                        if (!cancel) Gui.Logics.SaveToFile(file);
+                                        if (!cancel) Gui.Logics.SaveFile(file);
                                         caller.Visible = true;
                                         caller.GetElement("../loadData").Visible = true;
                                     });
@@ -137,7 +144,7 @@ namespace TerraLogic
                                     caller.GetElement("../saveData").Visible = false;
                                     (caller.GetElement("../fileSelect") as Gui.FileSelector).ShowDialog(false, (cancel, file) =>
                                     {
-                                        if (!cancel) Gui.Logics.LoadFromFile(file);
+                                        if (!cancel) Gui.Logics.LoadFile(file);
                                         caller.Visible = true;
                                         caller.GetElement("../saveData").Visible = true;
                                     });
@@ -148,7 +155,7 @@ namespace TerraLogic
                                 Font = Consolas10,
                                 Y = Pos.Height("..") - Pos.Height(),
                                 X = 0,
-                                Height = 50,
+                                Height = 60,
                                 Width = 200,
                                 BackColor = new Color(32,32,32),
                                 OutlineColor = new Color(48,48,48),
@@ -159,13 +166,26 @@ namespace TerraLogic
                                         X = 5, Y = 5,
                                         OnUpdate = (UIElement @this) =>
                                         {
-                                            Point pos = (PanNZoom.ScreenToWorld(Gui.Logics.Instance.MousePosition) / Gui.Logics.TileSize.ToVector2()).ToPoint();
-                                            @this.Text = $"X: {pos.X}, Y: {pos.Y}";
+                                            if (Gui.Logics.HoverWorld == Gui.Logics.World || Gui.Logics.HoverWorld is null)
+                                            {
+                                                Point pos = (PanNZoom.ScreenToWorld(Gui.Logics.Instance.MousePosition) / Gui.Logics.TileSize.ToVector2()).ToPoint();
+                                                @this.Text = $"X: {pos.X}, Y: {pos.Y}\n" +
+                                                $"Z: {PanNZoom.Zoom.ToString(NumberFormatInfo.InvariantInfo)}";
+                                            }
+                                            else 
+                                            {
+                                                Vector2 global = Gui.Logics.World.ScreenToTiles(Gui.Logics.Instance.MousePosition);
+                                                Point local = Gui.Logics.HoverWorld.ScreenToTiles(Gui.Logics.Instance.MousePosition).ToPoint();
+
+                                                @this.Text = 
+                                                $"G: {global.X.ToString(NumberFormatInfo.InvariantInfo)}, {global.Y.ToString(NumberFormatInfo.InvariantInfo)}\n" +
+                                                $"L: {local.X}, {local.Y} Z: {PanNZoom.Zoom.ToString(NumberFormatInfo.InvariantInfo)}";
+                                            }
                                         }
                                     },
                                     new UICheckButton()
                                     {
-                                        X = 5, Y = 25,
+                                        X = 5, Y = 35,
                                         Width = 125,
                                         Height = 20,
                                         Text = "Pause simulation",
@@ -185,7 +205,7 @@ namespace TerraLogic
                                     },
                                     new UIButton(".step")
                                     {
-                                        X = 75, Y = 25,
+                                        X = 75, Y = 35,
                                         Width = 55,
                                         Height = 20,
                                         BackColor = new Color(48,48,48),
@@ -198,7 +218,7 @@ namespace TerraLogic
                                     },
                                     new UICheckButton(".wiredebug")
                                     {
-                                        X = 140, Y = 25,
+                                        X = 140, Y = 35,
                                         Width = 55,
                                         Height = 20,
                                         BackColor = new Color(48,48,48),
@@ -233,12 +253,12 @@ namespace TerraLogic
                     }
                 }
             };
-            Gui.Logics.LoadFromFile("latest.tl");
+            Gui.Logics.LoadFile("latest.tl");
         }
 
         protected override void OnExiting(object sender, EventArgs args)
         {
-            Gui.Logics.SaveToFile("latest.tl");
+            Gui.Logics.SaveFile("latest.tl");
         }
 
         protected override void LoadContent()
@@ -255,8 +275,8 @@ namespace TerraLogic
             Consolas10 = Content.Load<SpriteFont>("Consolas10");
             Consolas8 = Content.Load<SpriteFont>("Consolas8");
 
-            
 
+            BackgroundGridRenderer.LoadContent(Content);
             Gui.Logics.LoadTileContent(Content);
 
         }

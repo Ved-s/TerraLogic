@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace TerraLogic.GuiElements
 {
@@ -28,17 +29,35 @@ namespace TerraLogic.GuiElements
 
         public StringBuilder TextBuilder = new StringBuilder();
 
+        public Regex ValidationRegex = null;
+
         public string PostText = "";
         public Color PostTextColor = new Color(128,128,128);
+
+        public virtual Color OutlineColor { get; set; } = Color.Transparent;
+
+        private float Blinker = 1f;
 
         public UIInput(string name) : base(name) 
         {
             
         }
 
+        public override void Update()
+        {
+            base.Update();
+
+            if (Blinker < 0) Blinker = 1f;
+            else Blinker -= 1 / 40f;
+        }
+
         public override void Draw(SpriteBatch spriteBatch)
         {
             DrawBackground(spriteBatch);
+            if (OutlineColor != Color.Transparent)
+            {
+                Graphics.DrawRectangle(spriteBatch, Bounds, OutlineColor);
+            }
 
             if (CursorPos > TextBuilder.Length) CursorPos = TextBuilder.Length;
             if (CursorPos < 0) CursorPos = 0;
@@ -46,16 +65,21 @@ namespace TerraLogic.GuiElements
             string text = TextBuilder.ToString();
             int width = (int)Font.MeasureString(text).X;
 
-            spriteBatch.DrawString(Font, text, Bounds.Location.ToVector2(), TextColor);
-            spriteBatch.DrawString(Font, PostText, new Vector2(Bounds.X + width, Bounds.Y), PostTextColor);
+            Vector2 textOffset = new(2, 2);
 
-            if (!ReadOnly)
+            spriteBatch.DrawString(Font, text, Bounds.Location.ToVector2() + textOffset, TextColor);
+            spriteBatch.DrawString(Font, PostText, new Vector2(Bounds.X + width, Bounds.Y) + textOffset, PostTextColor);
+
+            if (Active && !ReadOnly)
             {
                 int curPos = (int)Font.MeasureString(TextBuilder.ToString(0, CursorPos)).X;
-                spriteBatch.Draw(TerraLogic.Pixel, new Rectangle(curPos + Bounds.X, Bounds.Y, 1, Bounds.Height), Color.White);
+                spriteBatch.Draw(TerraLogic.Pixel, new Rectangle((int)(curPos + Bounds.X + textOffset.X), (int)(Bounds.Y + textOffset.Y), 1, (int)(Bounds.Height - textOffset.Y * 2)), Color.White * Blinker);
             }
+        }
 
-            
+        public override void OnActiveChanged()
+        {
+            Blinker = 1f;
         }
 
         protected internal override void MouseKeyStateUpdate(MouseKeys key, EventType @event, Point pos)
@@ -76,7 +100,7 @@ namespace TerraLogic.GuiElements
 
         protected internal override void KeyStateUpdate(Keys key, EventType @event)
         {
-            if (!Hover) return;
+            if (!Active) return;
 
             bool hold = false;
             if (@event == EventType.Hold)
@@ -96,6 +120,7 @@ namespace TerraLogic.GuiElements
 
             if (!ReadOnly && (@event == EventType.Presssed || (@event == EventType.Hold && hold))) 
             {
+                Blinker = 1f;
                 switch (key)
                 {
                     case Keys.Right:
@@ -125,6 +150,13 @@ namespace TerraLogic.GuiElements
                 if (c != 0) 
                 {
                     TextBuilder.Insert(CursorPos, c);
+
+                    if (ValidationRegex is not null && !ValidationRegex.IsMatch(TextBuilder.ToString()))
+                    {
+                        TextBuilder.Remove(CursorPos, 1);
+                        return;
+                    }
+
                     CursorPos++;
                     OnTextChanged?.Invoke(this);
                 }
