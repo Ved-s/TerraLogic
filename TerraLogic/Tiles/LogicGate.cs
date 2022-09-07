@@ -17,6 +17,7 @@ namespace TerraLogic.Tiles
         internal bool Display = false;
 
         internal bool NewState = false;
+        internal bool PrevoiousTickStateChanged = false;
 
         protected abstract int GateId { get; }
         protected abstract string GateName { get; }
@@ -30,7 +31,7 @@ namespace TerraLogic.Tiles
 
         static Texture2D Sprite;
 
-        int RedFade = 0;
+        internal int RedFade = 0;
 
         protected abstract bool Compute(bool[] lamps);
 
@@ -51,7 +52,6 @@ namespace TerraLogic.Tiles
             else if (!IsFaulty)
             {
                 bool newstate = Compute(lamps);
-                //Debug.WriteLine($"[{this}] {string.Join("", lamps.Select(b => b ? "1" : "0"))} -> {newstate}");
                 if (newstate != State)
                 {
                     if (!CurrentWireUpdateStack.Contains(this)) NewState = newstate;
@@ -66,19 +66,29 @@ namespace TerraLogic.Tiles
 
             if (RedFade > 0)
             {
-                Color c = Color.Red * (RedFade / 120f);
-                //Graphics.DrawRectangle(TerraLogic.SpriteBatch, rect, c);
+                Color c = Color.Red * (RedFade / 256f);
+                graphics.Draw(TerraLogic.Pixel, Vector2.Zero, new Rectangle(0, 0, 16, 16), c);
                 RedFade--;
             }
         }
 
         public override void Update()
         {
+            UpdateState();
             if (NewState != State)
             {
+                if (PrevoiousTickStateChanged)
+                {
+                    PrevoiousTickStateChanged = false;
+                    State = NewState;
+                    RedFade = 120;
+                    return;
+                }
+                PrevoiousTickStateChanged = true;
                 SendSignal();
                 State = NewState;
             }
+            else PrevoiousTickStateChanged = false;
         }
 
         public override void LoadContent(ContentManager content)
@@ -159,7 +169,6 @@ namespace TerraLogic.Tiles
             State = values[0];
             IsFaulty = values[1];
             NewState = values[2];
-            
         }
     }
 }

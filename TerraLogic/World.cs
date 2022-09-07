@@ -21,7 +21,6 @@ namespace TerraLogic
 
         public List<WireDebug> WireDebug { get; } = new List<WireDebug>();
 
-        internal HashSet<LogicGate> GatesToUpdate = new HashSet<LogicGate>();
         internal static ChunkArray2D<long> WireUpdateArray = new ChunkArray2D<long>(8);
 
         public int Width { get; private set; } = int.MaxValue;
@@ -96,19 +95,6 @@ namespace TerraLogic
                         Point inPos = new Point(w.X - t.Pos.X, w.Y - t.Pos.Y);
                         t.WireSignal(w.Wire, w.Origin, inPos);
                         AddDebug(w);
-                        if (t is LogicLamp)
-                        {
-                            int scanpos = w.Y;
-                            while (Tiles[w.X, scanpos] is LogicLamp) scanpos++;
-                            if (Tiles[w.X, scanpos] is LogicGate lg)
-                            {
-                                //if (w.IsOrigin(w.X, scanpos))
-                                //{
-                                //    Debug.WriteLine($"[{lg}] Puff!");
-                                //}
-                                GatesToUpdate.Add(lg);
-                            }
-                        }
                     }
                 }
             }
@@ -466,7 +452,7 @@ namespace TerraLogic
             if (currentPausedUpdateTick || !Logics.WireDebugActive)
                 WireDebug.Clear();
 
-            if (!Logics.UpdatePaused || currentPausedUpdateTick && GatesToUpdate.Count == 0)
+            if (!Logics.UpdatePaused || currentPausedUpdateTick)
             {
                 foreach (ChunkArray2D<Tile>.ChunkItem tile in Tiles)
                 {
@@ -476,12 +462,7 @@ namespace TerraLogic
                     if (!tile.Item.NeedsContinuousUpdate) tile.Item.NeedsUpdate = false;
                 }
             }
-
-            if (Logics.UpdatePaused && currentPausedUpdateTick && GatesToUpdate.Count > 0)
-                UpdateGates();
-            else if (!Logics.UpdatePaused)
-                while (GatesToUpdate.Count > 0)
-                    UpdateGates();
+                
 
             WireDebug.RemoveAll(wd => wd.Fade <= 0);
 
@@ -562,17 +543,6 @@ namespace TerraLogic
                     Height = (int)Math.Ceiling(worldRect.Height / Logics.TileSize.Y)
                 };
             }
-        }
-        private void UpdateGates()
-        {
-            LogicGate[] gates = GatesToUpdate.ToArray();
-            GatesToUpdate.Clear();
-
-            foreach (LogicGate g in gates)
-                g.UpdateState();
-
-            foreach (LogicGate g in gates)
-                g.Update();
         }
 
         internal void DrawWires(ChunkArray2D wires, BlendState blendState)
