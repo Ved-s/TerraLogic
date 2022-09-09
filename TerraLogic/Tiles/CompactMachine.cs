@@ -5,6 +5,7 @@ using Microsoft.Xna.Framework.Input;
 using System;
 using System.IO;
 using TerraLogic.Gui;
+using TerraLogic.Structures;
 
 namespace TerraLogic.Tiles
 {
@@ -12,13 +13,14 @@ namespace TerraLogic.Tiles
     {
         public override string Id => "compact";
 
-        public World CompactWorld 
+        public World? CompactWorld
         {
             get => InternalWorld;
             set
             {
                 InternalWorld = value;
-                InternalWorld.Owner = this;
+                if (InternalWorld is not null)
+                    InternalWorld.Owner = this;
             }
         }
 
@@ -39,8 +41,8 @@ namespace TerraLogic.Tiles
 
         private Point InterfacePos;
 
-        private static Texture2D Sprite;
-        private World InternalWorld;
+        private static Texture2D Sprite = null!;
+        private World? InternalWorld;
 
         public override Point Pos
         {
@@ -63,7 +65,7 @@ namespace TerraLogic.Tiles
                     CompactWorld.Parent = value;
 
                     int level = 0;
-                    World p = World;
+                    World? p = World;
                     while (p is not null)
                     {
                         level++;
@@ -81,7 +83,7 @@ namespace TerraLogic.Tiles
             Sprite = content.Load<Texture2D>("Tiles/CompactMachine");
         }
 
-        public override void Draw(TransformedGraphics graphics)
+        public override void Draw(Transform transform)
         {
             if (CompactWorld is not null)
                 CompactWorld.Visible = World.WorldZoom > 4f / Math.Max(ExternalSize.X, ExternalSize.Y);
@@ -91,8 +93,8 @@ namespace TerraLogic.Tiles
                 TerraLogic.SpriteBatch.End();
                 TerraLogic.SpriteBatch.Begin(SpriteSortMode.Deferred, World.CurrentDrawBlendState, World.WorldZoom > 1f / Math.Max(ExternalSize.X, ExternalSize.Y) ? SamplerState.PointWrap : SamplerState.LinearWrap);
             }
-            
-            DrawBordered(graphics, Size, false, !RespectWire);
+
+            DrawBordered(transform, Size, false, !RespectWire, World!);
             if (World is not null)
             {
                 TerraLogic.SpriteBatch.End();
@@ -102,13 +104,13 @@ namespace TerraLogic.Tiles
             {
                 TerraLogic.SpriteBatch.End();
                 CompactWorld.Draw(World.CurrentDrawBlendState);
-                TerraLogic.SpriteBatch.Begin(SpriteSortMode.Deferred, World.CurrentDrawBlendState, World.WorldZoom > 1 ? SamplerState.PointWrap : SamplerState.LinearWrap);
+                TerraLogic.SpriteBatch.Begin(SpriteSortMode.Deferred, World.CurrentDrawBlendState, World!.WorldZoom > 1 ? SamplerState.PointWrap : SamplerState.LinearWrap);
             }
         }
 
         internal override string GetData()
         {
-            return $"{(RespectWire?"":"-")}{InternalSize.X}x{InternalSize.Y}:{ExternalSize.X}x{ExternalSize.Y}";
+            return $"{(RespectWire ? "" : "-")}{InternalSize.X}x{InternalSize.Y}:{ExternalSize.X}x{ExternalSize.Y}";
         }
 
         public override Tile Copy()
@@ -119,17 +121,17 @@ namespace TerraLogic.Tiles
                 ExternalSize = ExternalSize,
                 InterfacePos = InterfacePos,
                 RespectWire = RespectWire,
-                CompactWorld = CompactWorld.CopyExact(),
+                CompactWorld = CompactWorld!.CopyExact(),
             };
         }
 
-        public override Tile CreateTile(string data, bool preview)
+        public override Tile CreateTile(string? data, bool preview)
         {
             Point @internal = InternalSize;
             Point @external = ExternalSize;
 
             bool respectWire = data.IsNullEmptyOrWhitespace() || data[0] != '-';
-            if (!respectWire) data = data[1..];
+            if (!respectWire) data = data![1..];
 
             if (!data.IsNullEmptyOrWhitespace())
             {
@@ -180,7 +182,7 @@ namespace TerraLogic.Tiles
         {
             if (new Rectangle(Pos, Size).Contains(from)) return;
 
-            if (CompactWorld.Tiles[InterfacePos.X, InterfacePos.Y] is CompactInterface @interface)
+            if (CompactWorld!.Tiles[InterfacePos.X, InterfacePos.Y] is CompactInterface @interface)
             {
                 if (!RespectWire)
                     wire = -1;
@@ -200,7 +202,7 @@ namespace TerraLogic.Tiles
         {
             if (!held && preview && TerraLogic.Root.CurrentKeys.IsKeyDown(Keys.LeftShift))
             {
-                CompactSizeSelector.Instance.ShowDialog(this);
+                CompactSizeSelector.Instance?.ShowDialog(this);
             }
         }
 
@@ -219,7 +221,7 @@ namespace TerraLogic.Tiles
             writer.Write(ExternalSize.Y);
             writer.Write(InterfacePos.X);
             writer.Write(InterfacePos.Y);
-            CompactWorld.Save(writer);
+            CompactWorld!.Save(writer);
         }
 
         public override void Load(BinaryReader reader)
@@ -233,7 +235,7 @@ namespace TerraLogic.Tiles
             CompactWorld.Load(reader);
         }
 
-        public static void DrawBordered(TransformedGraphics graphics, Point size, bool @interface, bool yellow) 
+        public static void DrawBordered(Transform transform, Point size, bool @interface, bool yellow, World? world)
         {
             int startY = @interface ? Logics.TileSize.Y : 0;
 
@@ -241,33 +243,40 @@ namespace TerraLogic.Tiles
             Point bend = size - new Point(5);
             Point bsize = bend - new Point(5);
 
-            graphics.Draw(Sprite, new Rectangle(Point.Zero, new(5)),   new Rectangle(0, startY, 5, 5),       Color.White);
-            graphics.Draw(Sprite, new Rectangle(bend.X, 0, 5, 5),      new Rectangle(11, startY, 5, 5),      Color.White);
-            graphics.Draw(Sprite, new Rectangle(0, bend.Y, 5,5),       new Rectangle(0, startY + 11, 5,5),   Color.White);
-            graphics.Draw(Sprite, new Rectangle(bend.X, bend.Y, 5, 5), new Rectangle(11, startY + 11, 5, 5), Color.White);
+            TerraLogic.SpriteBatch.End();
+            TerraLogic.SpriteBatch.Begin(transformMatrix: transform.ToMatrix(),
+                samplerState: world?.WorldZoom > 1 ? SamplerState.PointClamp : SamplerState.LinearClamp);
 
-            graphics.Draw(Sprite, new Rectangle(5, 0, bsize.X, 5),      new Rectangle(5, startY, 6, 5),  Color.White);
-            graphics.Draw(Sprite, new Rectangle(0, 5, 5, bsize.Y),      new Rectangle(0, startY + 5, 5, 6),  Color.White);
-            graphics.Draw(Sprite, new Rectangle(5, bend.Y, bsize.X, 5), new Rectangle(5, startY + 11, 6, 5), Color.White);
-            graphics.Draw(Sprite, new Rectangle(bend.X, 5, 5, bsize.Y), new Rectangle(11, startY + 5, 5, 6), Color.White);
-            
-            graphics.Draw(Sprite, new Rectangle(new(5), bsize), new Rectangle(5, startY + 5, 6, 6), Color.White);
+            TerraLogic.SpriteBatch.Draw(Sprite, new Rectangle(0, 0, 5, 5), new Rectangle(0, startY, 5, 5), Color.White);
+            TerraLogic.SpriteBatch.Draw(Sprite, new Rectangle(bend.X, 0, 5, 5), new Rectangle(11, startY, 5, 5), Color.White);
+            TerraLogic.SpriteBatch.Draw(Sprite, new Rectangle(0, bend.Y, 5, 5), new Rectangle(0, startY + 11, 5, 5), Color.White);
+            TerraLogic.SpriteBatch.Draw(Sprite, new Rectangle(bend.X, bend.Y, 5, 5), new Rectangle(11, startY + 11, 5, 5), Color.White);
 
-            if (yellow) 
+            TerraLogic.SpriteBatch.Draw(Sprite, new Rectangle(5, 0, bsize.X, 5), new Rectangle(5, startY, 6, 5), Color.White);
+            TerraLogic.SpriteBatch.Draw(Sprite, new Rectangle(0, 5, 5, bsize.Y), new Rectangle(0, startY + 5, 5, 6), Color.White);
+            TerraLogic.SpriteBatch.Draw(Sprite, new Rectangle(5, bend.Y, bsize.X, 5), new Rectangle(5, startY + 11, 6, 5), Color.White);
+            TerraLogic.SpriteBatch.Draw(Sprite, new Rectangle(bend.X, 5, 5, bsize.Y), new Rectangle(11, startY + 5, 5, 6), Color.White);
+
+            TerraLogic.SpriteBatch.Draw(Sprite, new Rectangle(5, 5, bsize.X, bsize.Y), new Rectangle(5, startY + 5, 6, 6), Color.White);
+
+            if (yellow)
                 startY += 6;
 
-            graphics.Draw(Sprite, new Rectangle((size.X - 6) / 2, (size.Y - 6) / 2, 6, 6), new Rectangle(16, startY, 6, 6), Color.White);
+            TerraLogic.SpriteBatch.Draw(Sprite, new Rectangle((size.X - 6) / 2, (size.Y - 6) / 2, 6, 6), new Rectangle(16, startY, 6, 6), Color.White);
+
+            TerraLogic.SpriteBatch.End();
+            TerraLogic.SpriteBatch.Begin(samplerState: world?.WorldZoom > 1 ? SamplerState.PointClamp : SamplerState.LinearClamp);
         }
 
         class CompactInterface : Tile
         {
             public override string Id => "interface";
 
-            public override bool CanRemove 
+            public override bool CanRemove
             {
                 get
                 {
-                    if (World.Owner is not CompactMachine compact || compact.CompactWorld != World) 
+                    if (World.Owner is not CompactMachine compact || compact.CompactWorld != World)
                         return true;
 
                     return compact.InterfacePos != Pos;
@@ -277,12 +286,12 @@ namespace TerraLogic.Tiles
             public override bool ShowPreview => false;
 
 
-            public override void Draw(TransformedGraphics graphics)
+            public override void Draw(Transform transform)
             {
                 TerraLogic.SpriteBatch.End();
                 TerraLogic.SpriteBatch.Begin(blendState: World.CurrentDrawBlendState, samplerState: SamplerState.PointWrap);
 
-                DrawBordered(graphics, Size, true, !RespectWire);
+                DrawBordered(transform, Size, true, !RespectWire, World!);
 
                 TerraLogic.SpriteBatch.End();
                 TerraLogic.SpriteBatch.Begin(blendState: World.CurrentDrawBlendState, samplerState: World.WorldZoom > 1 ? SamplerState.PointWrap : SamplerState.LinearWrap);
@@ -309,7 +318,7 @@ namespace TerraLogic.Tiles
                 return new CompactInterface(InternalSize);
             }
 
-            public override Tile CreateTile(string data, bool preview)
+            public override Tile CreateTile(string? data, bool preview)
             {
                 throw new NotImplementedException();
             }

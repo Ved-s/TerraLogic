@@ -17,11 +17,11 @@ namespace TerraLogic.Gui
             BackColor = new Color(32,32,32);
         }
 
-        public override void Draw(SpriteBatch spriteBatch)
+        public override void Draw()
         {
-            DrawBackground(spriteBatch);
+            DrawBackground();
 
-            Graphics.DrawRectangle(spriteBatch, Bounds, new Color(48, 48, 48));
+            Graphics.DrawRectangle(Bounds, new Color(48, 48, 48));
 
             int ypos = 3;
             Rectangle hover;
@@ -35,7 +35,7 @@ namespace TerraLogic.Gui
                 hover = new Rectangle(0, ypos - 3, 18, 18);
                 if (Hover && hover.Contains(MousePosition))
                 {
-                    Graphics.FillRectangle(spriteBatch, hover.WithOffset(Bounds.Location), new Color(64, 64, 64));
+                    Graphics.FillRectangle(hover.WithOffset(Bounds.Location), new Color(64, 64, 64));
                     HoverText = c.PackedValue.ToString("x8").Substring(2) + (Locked? "" : "\nPress DEL to remove\nRight-Click to edit");
                 }
 
@@ -49,13 +49,13 @@ namespace TerraLogic.Gui
                 }
                 else
                 {
-                    Graphics.DrawRectangle(spriteBatch, rect, Color.White);
+                    Graphics.DrawRectangle(rect, Color.White);
                     rect.X++;
                     rect.Y++;
                     rect.Width -= 2;
                     rect.Height -= 2;
                 }
-                Graphics.FillRectangle(spriteBatch, rect, c);
+                Graphics.FillRectangle(rect, c);
 
                 ypos += 18;
             }
@@ -64,12 +64,12 @@ namespace TerraLogic.Gui
                 hover = new Rectangle(0, ypos - 3, 18, 18);
                 if (hover.Contains(MousePosition))
                 {
-                    Graphics.FillRectangle(spriteBatch, hover.WithOffset(Bounds.Location), new Color(64, 64, 64));
+                    Graphics.FillRectangle(hover.WithOffset(Bounds.Location), new Color(64, 64, 64));
                     HoverText = "Add wire";
                 }
 
-                Graphics.FillRectangle(spriteBatch, new Rectangle(8, ypos, 2, 12).WithOffset(Bounds.Location), Color.White);
-                Graphics.FillRectangle(spriteBatch, new Rectangle(3, ypos + 5, 12, 2).WithOffset(Bounds.Location), Color.White);
+                Graphics.FillRectangle(new Rectangle(8, ypos, 2, 12).WithOffset(Bounds.Location), Color.White);
+                Graphics.FillRectangle(new Rectangle(3, ypos + 5, 12, 2).WithOffset(Bounds.Location), Color.White);
             }
         }
 
@@ -85,10 +85,10 @@ namespace TerraLogic.Gui
                     Locked = true;
                     PositionRecalculateRequired = true;
 
-                    ColorSelector.Instance.ShowDialog(null, (cancel, color) =>
+                    ColorSelector.Instance?.ShowDialog(Color.White, (cancel, color) =>
                     {
                         if (!cancel)
-                            Logics.WireColorMapping.Add((Color)color);
+                            Logics.WireColorMapping.Add(color);
                         Locked = false;
                         PositionRecalculateRequired = true;
                     }, null, Logics.Wire, Logics.CalculateWireSpriteOffset(true,true,true,true));

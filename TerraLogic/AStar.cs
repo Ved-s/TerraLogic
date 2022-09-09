@@ -10,7 +10,7 @@ namespace TerraLogic
     {
         public delegate bool IsPassable(Side sideIn, Point pos, Side sideOut);
 
-        public static Point[] AStar(Point start, Point end, TimeSpan timeLimit, IsPassable isPassable)
+        public static Point[]? AStar(Point start, Point end, TimeSpan timeLimit, IsPassable isPassable)
         {
             Dictionary<Point, AStarNode> nodes = new Dictionary<Point, AStarNode>()
             {
@@ -30,7 +30,7 @@ namespace TerraLogic
                     dir = dir,
                 };
             }
-            AStarNode FindMinCost()
+            AStarNode? FindMinCost()
             {
                 AStarNode n = new AStarNode() { G = int.MaxValue };
 
@@ -42,11 +42,11 @@ namespace TerraLogic
                 return n;
             }
 
-            AStarNode SetNodeAt(AStarNode me, Point at, Side side)
+            AStarNode? SetNodeAt(AStarNode me, Point at, Side side)
             {
                 if (!isPassable(me.dir, me.pos, side)) return null;
 
-                if (nodes.TryGetValue(at, out AStarNode nei))
+                if (nodes.TryGetValue(at, out AStarNode? nei))
                 {
                     if (nei.G > me.G + 10)
                     {
@@ -69,7 +69,7 @@ namespace TerraLogic
             {
                 if (DateTime.Now - startTime > timeLimit) return null;
 
-                AStarNode node = FindMinCost();
+                AStarNode? node = FindMinCost();
                 if (node is null) return null;
                 if (node.pos == end)
                 {
@@ -106,7 +106,7 @@ namespace TerraLogic
             public int F { get => G + H; }
             public Side dir;
 
-            public override bool Equals(object obj)
+            public override bool Equals(object? obj)
             {
                 return obj is AStarNode node && node.pos.Equals(pos);
             }

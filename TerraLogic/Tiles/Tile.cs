@@ -1,10 +1,12 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using TerraLogic.Structures;
 
 namespace TerraLogic.Tiles
 {
@@ -20,7 +22,7 @@ namespace TerraLogic.Tiles
         public virtual bool CanRemove => true;
 
         public bool NeedsUpdate { get; set; }
-        public virtual bool NeedsContinuousUpdate{ get; set; }
+        public virtual bool NeedsContinuousUpdate { get; set; }
 
         internal protected bool Created { get; internal set; } = false;
 
@@ -29,7 +31,7 @@ namespace TerraLogic.Tiles
 
         public virtual World World { get; internal protected set; }
 
-        public abstract void Draw(TransformedGraphics graphics);
+        public abstract void Draw(Transform transform);
         public virtual void Update() { }
 
         public virtual void WireSignal(int wire, Point from, Point inputPosition) { }
@@ -61,8 +63,8 @@ namespace TerraLogic.Tiles
 
         public abstract Tile Copy();
 
-        public abstract Tile CreateTile(string data, bool preview);
-        internal virtual string GetData() => null;
+        public abstract Tile CreateTile(string? data, bool preview);
+        internal virtual string? GetData() => null;
 
         public virtual void Save(BinaryWriter writer) { }
         public virtual void Load(BinaryReader reader) { }

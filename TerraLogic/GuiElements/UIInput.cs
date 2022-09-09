@@ -51,12 +51,12 @@ namespace TerraLogic.GuiElements
             else Blinker -= 1 / 40f;
         }
 
-        public override void Draw(SpriteBatch spriteBatch)
+        public override void Draw()
         {
-            DrawBackground(spriteBatch);
+            DrawBackground();
             if (OutlineColor != Color.Transparent)
             {
-                Graphics.DrawRectangle(spriteBatch, Bounds, OutlineColor);
+                Graphics.DrawRectangle(Bounds, OutlineColor);
             }
 
             if (CursorPos > TextBuilder.Length) CursorPos = TextBuilder.Length;
@@ -67,13 +67,13 @@ namespace TerraLogic.GuiElements
 
             Vector2 textOffset = new(2, 2);
 
-            spriteBatch.DrawString(Font, text, Bounds.Location.ToVector2() + textOffset, TextColor);
-            spriteBatch.DrawString(Font, PostText, new Vector2(Bounds.X + width, Bounds.Y) + textOffset, PostTextColor);
+            TerraLogic.SpriteBatch.DrawString(Font, text, Bounds.Location.ToVector2() + textOffset, TextColor);
+            TerraLogic.SpriteBatch.DrawString(Font, PostText, new Vector2(Bounds.X + width, Bounds.Y) + textOffset, PostTextColor);
 
             if (Active && !ReadOnly)
             {
                 int curPos = (int)Font.MeasureString(TextBuilder.ToString(0, CursorPos)).X;
-                spriteBatch.Draw(TerraLogic.Pixel, new Rectangle((int)(curPos + Bounds.X + textOffset.X), (int)(Bounds.Y + textOffset.Y), 1, (int)(Bounds.Height - textOffset.Y * 2)), Color.White * Blinker);
+                TerraLogic.SpriteBatch.Draw(TerraLogic.Pixel, new Rectangle((int)(curPos + Bounds.X + textOffset.X), (int)(Bounds.Y + textOffset.Y), 1, (int)(Bounds.Height - textOffset.Y * 2)), Color.White * Blinker);
             }
         }
 

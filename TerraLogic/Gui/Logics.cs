@@ -58,7 +58,7 @@ namespace TerraLogic.Gui
         public static World HoverWorld { get; set; }
         public static World ActiveWorld { get; private set; }
 
-        public static World PastePreview { get; set; }
+        public static World? PastePreview { get; set; }
 
         internal static string SelectedTileId = null;
         internal static Tile SelectedTilePreview = null;
@@ -157,7 +157,7 @@ namespace TerraLogic.Gui
             Debug.WriteLine($"Saved file in {watch.Elapsed.TotalMilliseconds:0.00}ms");
         }
 
-        public override void Draw(SpriteBatch spriteBatch)
+        public override void Draw()
         {
             TerraLogic.SpriteBatch.End();
             DrawGrid();
@@ -165,7 +165,7 @@ namespace TerraLogic.Gui
             World.Draw(BlendState.AlphaBlend);
 
             for (int i = 0; i < Tools.Count; i++)
-                Tools[i].Draw(spriteBatch, SelectedToolId == i);
+                Tools[i].Draw(SelectedToolId == i);
 
             TerraLogic.SpriteBatch.Begin();
         }
@@ -207,7 +207,7 @@ namespace TerraLogic.Gui
             {
                 if (@event == EventType.Hold)
                 {
-                    if (SelectedTileId != null)
+                    if (SelectedTileId is not null)
                     {
                         string data = SelectedTilePreview.GetData();
                         ActiveWorld.SetTile(worldpos, SelectedTilePreview.Id + (data is null ? "" : ":" + data), SelectedTilePreview);
@@ -220,7 +220,7 @@ namespace TerraLogic.Gui
                     Rectangle selection = global::TerraLogic.Tools.Select.Instance.Selection;
                     if (selection.Contains(worldpos))
                     {
-                        if (SelectedTileId != null)
+                        if (SelectedTileId is not null)
                         {
                             string data = SelectedTilePreview.GetData();
                             data = SelectedTilePreview.Id + (data is null ? "" : ":" + data);
@@ -318,7 +318,11 @@ namespace TerraLogic.Gui
                     if (key == Keys.V && Root.CurrentKeys.IsKeyDown(Keys.LeftControl))
                     {
                         PastePreview = ClipboardUtils.World;
-                        PastePreview.BackgroundColor = Color.CornflowerBlue * 0.2f;
+                        if (PastePreview is not null)
+                        {
+                            PastePreview.BackgroundColor = Color.CornflowerBlue * 0.2f;
+                            PastePreview.BackgroundOOBColor = Color.Transparent;
+                        }
                     }
                 }
 

@@ -15,12 +15,12 @@ namespace TerraLogic.Gui
 
         readonly GradientColorBar Red, Green, Blue;
 
-        public delegate void ColorChosenDelegate(bool cancel, Color? color);
+        public delegate void ColorChosenDelegate(bool cancel, Color color);
 
-        ColorChosenDelegate Callback;
-        Action<Color> ChangeCallback;
-        Color? InitColor;
-        Texture2D DrawSprite;
+        ColorChosenDelegate? Callback;
+        Action<Color>? ChangeCallback;
+        Color InitColor;
+        Texture2D DrawSprite = null!;
         Rectangle? SpriteRect;
 
         public Color CurrentColor 
@@ -33,7 +33,7 @@ namespace TerraLogic.Gui
                 Blue.Value = value.B;
             }
         }
-        public static ColorSelector Instance;
+        public static ColorSelector? Instance;
 
         public ColorSelector(string name) : base(name) 
         {
@@ -72,7 +72,7 @@ namespace TerraLogic.Gui
 
                     OnClick = (caller) =>
                     {
-                        Callback(true, InitColor);
+                        Callback?.Invoke(true, InitColor);
                         Callback = null;
                         Visible = false;
                     }
@@ -89,25 +89,25 @@ namespace TerraLogic.Gui
                     Text = "Ok",
                     OnClick = (caller) =>
                     {
-                        Callback(false, CurrentColor);
+                        Callback?.Invoke(false, CurrentColor);
                         Callback = null;
                         Visible = false;
                     }
                 }
             };
 
-            Red = GetElement(".red") as GradientColorBar; 
-            Green = GetElement(".green") as GradientColorBar; 
-            Blue = GetElement(".blue") as GradientColorBar; 
+            Red =   ((GradientColorBar)GetElement(".red")!)!; 
+            Green = ((GradientColorBar)GetElement(".green")!)!; 
+            Blue =  ((GradientColorBar)GetElement(".blue")!)!; 
         }
 
-        public void ShowDialog(Color? init, ColorChosenDelegate callback, Action<Color> colorChanging = null, Texture2D previewSprite = null, Rectangle? previewSpriteRect = null)
+        public void ShowDialog(Color init, ColorChosenDelegate callback, Action<Color>? colorChanging = null, Texture2D? previewSprite = null, Rectangle? previewSpriteRect = null)
         {
             Visible = true;
             Callback?.Invoke(true, CurrentColor);
             Callback = callback;
             ChangeCallback = colorChanging;
-            if (init != null) CurrentColor = (Color)init;
+            CurrentColor = init;
             InitColor = init;
 
             DrawSprite = previewSprite ?? TerraLogic.Pixel;
@@ -146,38 +146,38 @@ namespace TerraLogic.Gui
             Blue.End.G = g;
             Blue.End.B = 255;
         }
-        public override void Draw(SpriteBatch spriteBatch)
+        public override void Draw()
         {
-            DrawBackground(spriteBatch);
+            DrawBackground();
             Color outline = BackColor * 2;
             outline.A = 255;
-            Graphics.DrawRectangle(spriteBatch, Bounds, outline);
+            Graphics.DrawRectangle(Bounds, outline);
 
-            base.Draw(spriteBatch);
+            base.Draw();
 
             Rectangle rect = new Rectangle(Bounds.X + 135, Bounds.Y + 10, 56, 56);
 
             Color c = CurrentColor;
 
-            spriteBatch.End();
-            spriteBatch.Begin(SpriteSortMode.Deferred, null, SamplerState.PointWrap, null, null);
-            spriteBatch.Draw(DrawSprite, rect, SpriteRect, c);
-            spriteBatch.End();
-            spriteBatch.Begin();
+            TerraLogic.SpriteBatch.End();
+            TerraLogic.SpriteBatch.Begin(SpriteSortMode.Deferred, null, SamplerState.PointWrap, null, null);
+            TerraLogic.SpriteBatch.Draw(DrawSprite, rect, SpriteRect, c);
+            TerraLogic.SpriteBatch.End();
+            TerraLogic.SpriteBatch.Begin();
 
-            Graphics.DrawRectangle(spriteBatch, rect, Color.White);
+            Graphics.DrawRectangle(rect, Color.White);
 
             string str = $"{c.R} ({c.R:x2})";
             int x = (56 - (int)TerraLogic.Consolas8.MeasureString(str).X) / 2 + Bounds.X + 135;
-            spriteBatch.DrawStringShaded(TerraLogic.Consolas8, str, new Vector2(x, Bounds.Y + 17), Color.Red, Color.Black);
+            TerraLogic.SpriteBatch.DrawStringShaded(TerraLogic.Consolas8, str, new Vector2(x, Bounds.Y + 17), Color.Red, Color.Black);
 
             str = $"{c.G} ({c.G:x2})";
             x = (56 - (int)TerraLogic.Consolas8.MeasureString(str).X) / 2 + Bounds.X + 135;
-            spriteBatch.DrawStringShaded(TerraLogic.Consolas8, str, new Vector2(x, Bounds.Y + 32), Color.Green, Color.Black);
+            TerraLogic.SpriteBatch.DrawStringShaded(TerraLogic.Consolas8, str, new Vector2(x, Bounds.Y + 32), Color.Green, Color.Black);
 
             str = $"{c.B} ({c.B:x2})";
             x = (56 - (int)TerraLogic.Consolas8.MeasureString(str).X) / 2 + Bounds.X + 135;
-            spriteBatch.DrawStringShaded(TerraLogic.Consolas8, str, new Vector2(x, Bounds.Y + 47), Color.Blue, Color.Black);
+            TerraLogic.SpriteBatch.DrawStringShaded(TerraLogic.Consolas8, str, new Vector2(x, Bounds.Y + 47), Color.Blue, Color.Black);
         }
     }
 
@@ -190,7 +190,7 @@ namespace TerraLogic.Gui
 
         public byte Value = 0;
 
-        public Action<byte> ValueChanged = null;
+        public Action<byte>? ValueChanged = null;
 
         public GradientColorBar(string name) : base(name)
         {
@@ -199,31 +199,29 @@ namespace TerraLogic.Gui
 
         public override string HoverText => Color.Lerp(Start, End, (float)MousePosition.X / Bounds.Width).PackedValue.ToString("x8").Substring(2);
 
-        public override void Draw(SpriteBatch spriteBatch)
+        public override void Draw()
         {
-            spriteBatch.End();
-            spriteBatch.Begin(SpriteSortMode.Immediate, null);
+            TerraLogic.SpriteBatch.End();
+            TerraLogic.SpriteBatch.Begin(SpriteSortMode.Immediate, null);
 
             Rectangle rect = Bounds;
             rect.X++; rect.Y++; rect.Width -= 2; rect.Height -= 2;
 
-            Graphics.DrawRectangle(spriteBatch, rect, BackColor);
+            Graphics.DrawRectangle(rect, BackColor);
             rect.X++; rect.Y++; rect.Width -= 2; rect.Height -= 2;
 
             TerraLogic.Gradient.Parameters["Color0"].SetValue(Start.ToVector4());
             TerraLogic.Gradient.Parameters["Color1"].SetValue(End.ToVector4());
             TerraLogic.Gradient.CurrentTechnique.Passes[0].Apply();
 
-            Graphics.FillRectangle(spriteBatch, rect, Color.White);
+            Graphics.FillRectangle( rect, Color.White);
 
-            spriteBatch.End();
-            spriteBatch.Begin();
+            TerraLogic.SpriteBatch.End();
+            TerraLogic.SpriteBatch.Begin();
 
             int x = 1 + (int)((Bounds.Width - 5) * (Value / 255f));
 
-            Graphics.DrawRectangle(spriteBatch, new Rectangle(Bounds.X + x, Bounds.Y, 3, Bounds.Height), SliderColor);
-
-            
+            Graphics.DrawRectangle(new Rectangle(Bounds.X + x, Bounds.Y, 3, Bounds.Height), SliderColor);
         }
 
         protected internal override void MouseKeyStateUpdate(MouseKeys key, EventType @event, Point pos)
@@ -247,7 +245,7 @@ namespace TerraLogic.Gui
 
             if (@event == EventType.Presssed && Hover) 
             {
-                int interval = Root.CurrentKeys.IsKeyDown(Keys.LeftShift) ? (byte)16 : (byte)1;
+                int interval = Root!.CurrentKeys.IsKeyDown(Keys.LeftShift) ? (byte)16 : (byte)1;
                 switch (key)
                 {
                     case Keys.Left:

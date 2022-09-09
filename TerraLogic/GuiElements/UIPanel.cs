@@ -11,11 +11,11 @@ namespace TerraLogic.GuiElements
     {
         public UIPanel(string name) : base(name) { }
 
-        public override void Draw(SpriteBatch spriteBatch)
+        public override void Draw()
         {
-            DrawBackground(spriteBatch);
-            if (OutlineColor != Color.Transparent) Graphics.DrawRectangle(spriteBatch, Bounds, OutlineColor);
-            base.Draw(spriteBatch);
+            DrawBackground();
+            if (OutlineColor != Color.Transparent) Graphics.DrawRectangle(Bounds, OutlineColor);
+            base.Draw();
         }
 
         public Color OutlineColor = Color.Transparent;

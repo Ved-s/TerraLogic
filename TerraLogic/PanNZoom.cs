@@ -1,6 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
 using System;
 using System.Diagnostics;
+using TerraLogic.Structures;
 
 namespace TerraLogic
 {
@@ -46,7 +47,7 @@ namespace TerraLogic
             v.Y = (p.Y / Zoom) + Position.Y;
             return v;
         }
-        public static Rectangle WorldToScreen(RectangleF rect) 
+        public static Rectangle WorldToScreen(Rect rect) 
         {
             Rectangle r = new Rectangle();
             r.Location = WorldToScreen(rect.Location);
@@ -54,9 +55,9 @@ namespace TerraLogic
             r.Height = (int)Math.Ceiling(rect.Height * Zoom);
             return r;
         }
-        public static RectangleF ScreenToWorld(Rectangle rect)
+        public static Rect ScreenToWorld(Rectangle rect)
         {
-            RectangleF rf = new RectangleF();
+            Rect rf = new Rect();
             rf.Location = ScreenToWorld(rect.Location);
             rf.Width = rect.Width / Zoom;
             rf.Height = rect.Height / Zoom;

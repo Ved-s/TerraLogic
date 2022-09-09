@@ -21,10 +21,10 @@ namespace TerraLogic.GuiElements
 
         public new Point MousePosition;
 
-        public new UIElement Hover { get; private set; }
-        public new UIElement Active { get; private set; }
+        public new UIElement? Hover { get; private set; }
+        public new UIElement? Active { get; private set; }
 
-        public Action<UIElement, UIElement> OnGlobalActiveChanged;
+        public Action<UIElement?, UIElement?>? OnGlobalActiveChanged;
 
         internal bool Init = false;
 
@@ -96,20 +96,19 @@ namespace TerraLogic.GuiElements
             PositionRecalculateRequired = false;
             if (!anyMouseKey) Hover = TerraLogic.Instance.IsActive? GetHover(MousePosition) : null;
         }
-        public override void Draw(SpriteBatch spriteBatch)
+        public override void Draw()
         {
-            spriteBatch.Begin();
+            TerraLogic.SpriteBatch.Begin();
 
-            base.Draw(spriteBatch);
+            base.Draw();
 
-            if (Hover != null && CurrentKeys.IsKeyDown(Keys.F3))
+            if (Hover is not null && CurrentKeys.IsKeyDown(Keys.F3))
             {
-                //if (Hover.Parent != null) Hover.Parent.DrawDebug(spriteBatch, Color.Yellow);
-                Hover.DrawDebug(spriteBatch, Color.Red);
-                
+                //if (Hover.Parent is not null) Hover.Parent.DrawDebug(spriteBatch, Color.Yellow);
+                Hover.DrawDebug(Color.Red);
             }
 
-            if (Hover != null && Hover.HoverText != null) 
+            if (Hover is not null && Hover.HoverText is not null) 
             {
                 Vector2 pos = MousePosition.ToVector2();
 
@@ -117,24 +116,24 @@ namespace TerraLogic.GuiElements
                 if (pos.X > offX) pos.X -= offX;
                 else pos.X += 10;
 
-                spriteBatch.DrawString(Font, Hover.HoverText, pos + new Vector2(0, -1), Color.Black);
-                spriteBatch.DrawString(Font, Hover.HoverText, pos + new Vector2(-1, 0), Color.Black);
-                spriteBatch.DrawString(Font, Hover.HoverText, pos + new Vector2(0, 1),  Color.Black);
-                spriteBatch.DrawString(Font, Hover.HoverText, pos + new Vector2(1, 0), Color.Black);
-                spriteBatch.DrawString(Font, Hover.HoverText, pos + new Vector2(0, 0), Color.White);
+                TerraLogic.SpriteBatch.DrawString(Font, Hover.HoverText, pos + new Vector2(0, -1), Color.Black);
+                TerraLogic.SpriteBatch.DrawString(Font, Hover.HoverText, pos + new Vector2(-1, 0), Color.Black);
+                TerraLogic.SpriteBatch.DrawString(Font, Hover.HoverText, pos + new Vector2(0, 1),  Color.Black);
+                TerraLogic.SpriteBatch.DrawString(Font, Hover.HoverText, pos + new Vector2(1, 0), Color.Black);
+                TerraLogic.SpriteBatch.DrawString(Font, Hover.HoverText, pos + new Vector2(0, 0), Color.White);
             }
-            spriteBatch.End();
+            TerraLogic.SpriteBatch.End();
         }
 
-        public void SetActive(UIElement element)
+        public void SetActive(UIElement? element)
         {
             if (element is UIRoot) element = null;
 
-            UIElement previousActive = Active;
+            UIElement? previousActive = Active;
             Active = element;
 
-            if (previousActive != null) previousActive.OnActiveChanged();
-            if (Active != null) Active.OnActiveChanged();
+            if (previousActive is not null) previousActive.OnActiveChanged();
+            if (Active is not null) Active.OnActiveChanged();
             OnGlobalActiveChanged?.Invoke(previousActive, Active);
         }
 

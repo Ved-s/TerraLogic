@@ -76,9 +76,9 @@ namespace TerraLogic.Gui
             }
         }
 
-        public override void Draw(SpriteBatch spriteBatch)
+        public override void Draw()
         {
-            DrawBackground(spriteBatch);
+            DrawBackground();
 
             int xpos = 0;
 
@@ -86,7 +86,7 @@ namespace TerraLogic.Gui
             CurrentlyHoveredId = null;
             CurrentlyHoveredTile = null;
 
-            Graphics.DrawRectangle(spriteBatch, Bounds, new Color(48,48,48));
+            Graphics.DrawRectangle(Bounds, new Color(48,48,48));
 
             for (int i = 0; i < LoadedTileGroups.Count; i++)
             {
@@ -95,7 +95,7 @@ namespace TerraLogic.Gui
                     string tile = GroupIcon[i];
                     Dictionary<string, Tile> group = LoadedTileGroups[i];
 
-                    string groupHint = group.Count > 1 ? "In group:" : null;
+                    string? groupHint = group.Count > 1 ? "In group:" : null;
 
                     if (group.Count > 1)
                         foreach (KeyValuePair<string, Tile> t in group)
@@ -104,8 +104,9 @@ namespace TerraLogic.Gui
                                 groupHint += "\n  " + t.Value.DisplayName;
                             }
 
-                    DrawTile(spriteBatch, xpos, tile, group[tile], false, groupHint);
-                    if (group.Count > 1) spriteBatch.Draw(TerraLogic.MoreTex, new Rectangle(Bounds.X + xpos + 16, Bounds.Y + 16, 10, 10), Color.White);
+                    DrawTile(xpos, tile, group[tile], false, groupHint);
+                    if (group.Count > 1) 
+                        TerraLogic.SpriteBatch.Draw(TerraLogic.MoreTex, new Rectangle(Bounds.X + xpos + 16, Bounds.Y + 16, 10, 10), Color.White);
                     xpos += 32;
                 }
                 else
@@ -114,22 +115,22 @@ namespace TerraLogic.Gui
 
                     foreach (KeyValuePair<string, Tile> tile in group)
                     {
-                        DrawTile(spriteBatch, xpos, tile.Key, tile.Value, true);
+                        DrawTile(xpos, tile.Key, tile.Value, true);
                         xpos += 32;
                     }
                     if (group.Count > 1)
-                        Graphics.DrawRectangle(spriteBatch,
+                        Graphics.DrawRectangle(
                             new Rectangle(xpos - (group.Count * 32), 0, group.Count * 32, 32)
                             .WithOffset(Bounds.Location), new Color(72, 72, 72));
                 }
             }
         }
 
-        private void DrawTile(SpriteBatch spriteBatch, int xpos, string name, Tile tile, bool highlight, string addText = null)
+        private void DrawTile(int xpos, string name, Tile tile, bool highlight, string addText = null)
         {
             if (highlight)
             {
-                spriteBatch.Draw(TerraLogic.Pixel, new Rectangle(Bounds.X + xpos, Bounds.Y, 32, 32), new Color(40, 40, 40));
+                TerraLogic.SpriteBatch.Draw(TerraLogic.Pixel, new Rectangle(Bounds.X + xpos, Bounds.Y, 32, 32), new Color(40, 40, 40));
             }
             if (Hover && MousePosition.X >= xpos && MousePosition.X < xpos + 32)
             {
@@ -143,11 +144,12 @@ namespace TerraLogic.Gui
                     HoverText += $"\n[{tile.Id}{data}]";
                 }
                 if (addText is not null) HoverText += "\n" + addText;
-                spriteBatch.Draw(TerraLogic.Pixel, CurrentlyHoveredRect = new Rectangle(Bounds.X + xpos, Bounds.Y, 32, 32), new Color(64, 64, 64));
+                TerraLogic.SpriteBatch.Draw(TerraLogic.Pixel, CurrentlyHoveredRect = new Rectangle(Bounds.X + xpos, Bounds.Y, 32, 32), new Color(64, 64, 64));
             }
-            else if (Logics.SelectedTileId == name) spriteBatch.Draw(TerraLogic.Pixel, new Rectangle(Bounds.X + xpos, Bounds.Y, 32, 32), new Color(48, 48, 48));
+            else if (Logics.SelectedTileId == name) 
+                TerraLogic.SpriteBatch.Draw(TerraLogic.Pixel, new Rectangle(Bounds.X + xpos, Bounds.Y, 32, 32), new Color(48, 48, 48));
 
-            float scale = tile is null ? 1 : 1f/Math.Max(tile.Size.X, tile.Size.Y);
+            float scale = 1f/Math.Max(tile.Size.X, tile.Size.Y);
 
             Vector2 pos = new(Bounds.X + xpos + 8, Bounds.Y + 8);
 
@@ -164,7 +166,7 @@ namespace TerraLogic.Gui
 
         protected internal override void MouseKeyStateUpdate(MouseKeys key, EventType @event, Point pos)
         {
-            if (key == MouseKeys.Left && @event == EventType.Presssed && CurrentlyHoveredId != null)
+            if (key == MouseKeys.Left && @event == EventType.Presssed && CurrentlyHoveredId is not null)
             {
                 if (Logics.SelectedToolId != -1) Logics.Tools[Logics.SelectedToolId].IsSelected = false;
                 Logics.SelectedToolId = -1;
@@ -184,7 +186,7 @@ namespace TerraLogic.Gui
                 Width = (LoadedTileGroups.Count + (UnfoldedGroup == -1 ? 0 : LoadedTileGroups[UnfoldedGroup].Count - 1)) * 32;
 
             }
-            if (key == MouseKeys.Right && @event != EventType.Released && CurrentlyHoveredTile != null)
+            if (key == MouseKeys.Right && @event != EventType.Released && CurrentlyHoveredTile is not null)
             {
                 CurrentlyHoveredTile.RightClick(@event == EventType.Hold, true);
             }
@@ -209,11 +211,11 @@ namespace TerraLogic.Gui
 
         int CurrentlyHoveredId = -1;
 
-        public override void Draw(SpriteBatch spriteBatch)
+        public override void Draw()
         {
-            DrawBackground(spriteBatch);
+            DrawBackground();
 
-            Graphics.DrawRectangle(spriteBatch, Bounds, new Color(48, 48, 48));
+            Graphics.DrawRectangle(Bounds, new Color(48, 48, 48));
             int xpos = 0;
 
             HoverText = null;
@@ -227,13 +229,14 @@ namespace TerraLogic.Gui
                     CurrentlyHoveredId = i;
 
                     HoverText = tool.DisplayName;
-                    spriteBatch.Draw(TerraLogic.Pixel, new Rectangle(Bounds.X + xpos, Bounds.Y, 32, 32), new Color(64, 64, 64));
+                    TerraLogic.SpriteBatch.Draw(TerraLogic.Pixel, new Rectangle(Bounds.X + xpos, Bounds.Y, 32, 32), new Color(64, 64, 64));
                 }
-                else if (Logics.SelectedToolId == i) spriteBatch.Draw(TerraLogic.Pixel, new Rectangle(Bounds.X + xpos, Bounds.Y, 32, 32), new Color(48, 48, 48));
+                else if (Logics.SelectedToolId == i) 
+                    TerraLogic.SpriteBatch.Draw(TerraLogic.Pixel, new Rectangle(Bounds.X + xpos, Bounds.Y, 32, 32), new Color(48, 48, 48));
 
                 Rectangle rect = new Rectangle(Bounds.X + xpos + 8, Bounds.Y + 8, 16, 16);
 
-                spriteBatch.Draw(tool.Texture, rect, Color.White);
+                TerraLogic.SpriteBatch.Draw(tool.Texture, rect, Color.White);
 
                 xpos += 32;
             }

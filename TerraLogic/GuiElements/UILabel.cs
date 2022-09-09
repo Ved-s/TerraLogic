@@ -9,7 +9,7 @@ namespace TerraLogic.GuiElements
 {
     public class UILabel : UIElement
     {
-        public UILabel(string name = null) : base(name) { }
+        public UILabel(string? name = null) : base(name) { }
 
         public override string Text
         {
@@ -21,7 +21,7 @@ namespace TerraLogic.GuiElements
             }
         }
 
-        public override UIElement Parent 
+        public override UIElement? Parent 
         { 
             get => base.Parent;
             set
@@ -43,7 +43,7 @@ namespace TerraLogic.GuiElements
 
         private void RecalculateSize()
         {
-            if (Text != null && AutoSize && Font != null)
+            if (Text is not null && AutoSize && Font is not null)
             {
                 Point wh = Font.MeasureString(Text).ToPoint();
                 if (Bounds.Width != wh.X) Width = wh.X;
@@ -51,11 +51,11 @@ namespace TerraLogic.GuiElements
             }
         }
 
-        public override void Draw(SpriteBatch spriteBatch)
+        public override void Draw()
         {
 
             if (Font is null) return;
-            DrawBackground(spriteBatch);
+            DrawBackground();
             Vector2 pos = Bounds.Location.ToVector2();
             if (CenterText)
             {
@@ -68,13 +68,13 @@ namespace TerraLogic.GuiElements
 
             if (Shadow)
             {
-                spriteBatch.DrawString(Font, Text, pos + new Vector2(0, -1), ShadowColor);
-                spriteBatch.DrawString(Font, Text, pos + new Vector2(-1, 0), ShadowColor);
-                spriteBatch.DrawString(Font, Text, pos + new Vector2(0, 1), ShadowColor);
-                spriteBatch.DrawString(Font, Text, pos + new Vector2(1, 0), ShadowColor);
+                TerraLogic.SpriteBatch.DrawString(Font, Text, pos + new Vector2(0, -1), ShadowColor);
+                TerraLogic.SpriteBatch.DrawString(Font, Text, pos + new Vector2(-1, 0), ShadowColor);
+                TerraLogic.SpriteBatch.DrawString(Font, Text, pos + new Vector2(0, 1), ShadowColor);
+                TerraLogic.SpriteBatch.DrawString(Font, Text, pos + new Vector2(1, 0), ShadowColor);
             }
 
-            spriteBatch.DrawString(Font, Text, pos, TextColor);
+            TerraLogic.SpriteBatch.DrawString(Font, Text, pos, TextColor);
 
         }
 

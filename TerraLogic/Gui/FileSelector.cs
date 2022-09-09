@@ -12,12 +12,12 @@ namespace TerraLogic.Gui
     class FileSelector : UIElement
     {
         private string Path = System.IO.Path.DirectorySeparatorChar.ToString();
-        private DialogClosedDelegate Callback;
+        private DialogClosedDelegate? Callback;
         private bool AllowNonexistentFiles;
 
-        public delegate void DialogClosedDelegate(bool cancel, string filename);
+        public delegate void DialogClosedDelegate(bool cancel, string? filename);
 
-        public override string Text { get => GetElement(".title").Text; set => GetElement(".title").Text = value; }
+        public override string Text { get => GetElement(".title")!.Text; set => GetElement(".title")!.Text = value; }
 
         public FileSelector(string name) : base(name)
         {
@@ -52,7 +52,7 @@ namespace TerraLogic.Gui
                     Height = Pos.Height("..") - 100,
                     ItemClick = (caller, index, item, doubleClick) =>
                     {
-                        string i = item as string;
+                        string i = (item as string)!;
 
                         bool dir = i.EndsWith(System.IO.Path.DirectorySeparatorChar.ToString()) || i.EndsWith(System.IO.Path.AltDirectorySeparatorChar.ToString());
                         bool back = i == "..";
@@ -64,7 +64,7 @@ namespace TerraLogic.Gui
                             {
                                 if (i == "Current User")
                                 {
-                                    Path = System.Environment.GetEnvironmentVariable("USERPROFILE");
+                                    Path = Environment.GetEnvironmentVariable("USERPROFILE") ?? "/";
                                     UpdateItems();
                                     return;
                                 }
@@ -91,23 +91,23 @@ namespace TerraLogic.Gui
                             {
                                 string file = System.IO.Path.Combine(Path, i);
 
-                                Callback(false, file);
+                                Callback?.Invoke(false, file);
                                 Visible = false;
                                 
                             }
                         }
                         if (!dir && !back && !root)
                         {
-                            caller.GetElement("../ok").Visible = true;
-                            UIInput curFile = caller.GetElement("../curFile") as UIInput;
+                            caller.GetElement("../ok")!.Visible = true;
+                            UIInput curFile = (UIInput)caller.GetElement("../curFile")!;
                             curFile.Visible = true;
                             curFile.Text = i;
                         }
                         else
                         {
-                            UIInput curFile = caller.GetElement("../curFile") as UIInput;
+                            UIInput curFile = (UIInput)caller.GetElement("../curFile")!;
                             curFile.Visible = !root;
-                            caller.GetElement("../ok").Visible = AllowNonexistentFiles && curFile.TextBuilder.Length > 0 && !root;
+                            caller.GetElement("../ok")!.Visible = AllowNonexistentFiles && curFile.TextBuilder.Length > 0 && !root;
                             if (AllowNonexistentFiles) curFile.Text = "";
                             else curFile.Visible = false;
                         }
@@ -124,7 +124,7 @@ namespace TerraLogic.Gui
                     {
                         if (AllowNonexistentFiles) 
                         {
-                            caller.GetElement("../ok").Visible = 
+                            caller.GetElement("../ok")!.Visible = 
                                 Path != System.IO.Path.DirectorySeparatorChar.ToString()
                                 && caller.TextBuilder.Length > 0;
 
@@ -140,7 +140,7 @@ namespace TerraLogic.Gui
                         if (caller.TextBuilder.Length == 0) return;
 
                         string file = System.IO.Path.Combine(Path, caller.Text);
-                        Callback(false, file);
+                        Callback?.Invoke(false, file);
                         Visible = false;
                     }
                 },
@@ -157,7 +157,7 @@ namespace TerraLogic.Gui
 
                     OnClick = (caller) => 
                     {
-                        Callback(true, null);
+                        Callback?.Invoke(true, null);
                         Callback = null;
                         Visible = false;
                     }
@@ -178,16 +178,16 @@ namespace TerraLogic.Gui
                         string file;
                         if (AllowNonexistentFiles)
                         {
-                            file = caller.GetElement("../curFile").Text;
+                            file = caller.GetElement("../curFile")!.Text;
                         }
                         else 
                         {
-                            UIList files = caller.GetElement("../files") as UIList;
-                            file = files.Items[files.SelectedIndex] as string;
+                            UIList files = (UIList)caller.GetElement("../files")!;
+                            file = (string)files.Items[files.SelectedIndex];
                         }
                         file = System.IO.Path.Combine(Path, file);
 
-                        Callback(false, file);
+                        Callback?.Invoke(false, file);
                         Callback = null;
                         Visible = false;
                     }
@@ -205,7 +205,7 @@ namespace TerraLogic.Gui
             Callback = callback;
             AllowNonexistentFiles = allowNonexistentFiles;
 
-            UIInput curFile = GetElement(".curFile") as UIInput;
+            UIInput curFile = (UIInput)GetElement(".curFile")!;
             curFile.ReadOnly = !allowNonexistentFiles;
             if (allowNonexistentFiles) 
             {
@@ -215,14 +215,14 @@ namespace TerraLogic.Gui
 
         private void UpdateItems()
         {
-            GetElement(".path").Text = Path;
+            GetElement(".path")!.Text = Path;
 
-            UIList files = GetElement(".files") as UIList;
+            UIList files = (UIList)GetElement(".files")!;
             files.Items.Clear();
             files.SelectedIndex = -1;
 
-            UIInput curFile = GetElement(".curFile") as UIInput;
-            UIButton ok = GetElement(".ok") as UIButton;
+            UIInput curFile = (UIInput)GetElement(".curFile")!;
+            UIButton ok = (UIButton)GetElement(".ok")!;
             
 
             if (Path == System.IO.Path.DirectorySeparatorChar.ToString())
@@ -249,11 +249,10 @@ namespace TerraLogic.Gui
             
         }
 
-        public override void Draw(SpriteBatch spriteBatch)
+        public override void Draw()
         {
-            DrawBackground(spriteBatch);
-
-            base.Draw(spriteBatch);
+            DrawBackground();
+            base.Draw();
         }
     }
 }

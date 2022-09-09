@@ -32,7 +32,7 @@ namespace TerraLogic
             foreach (KnownColor known in KnownColors) 
             {
                 float newDistance = ColorDistance(known.Value, c);
-                if (color != null && newDistance >= distance) continue;
+                if (color is not null && newDistance >= distance) continue;
 
                 distance = newDistance;
                 color = known;

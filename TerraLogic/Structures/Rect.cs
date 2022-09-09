@@ -4,13 +4,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace TerraLogic
+namespace TerraLogic.Structures
 {
-    public struct RectangleF
+    public struct Rect
     {
-        public float X; 
-        public float Y; 
-        public float Width; 
+        public float X;
+        public float Y;
+        public float Width;
         public float Height;
 
         public float Left => X;
@@ -18,7 +18,7 @@ namespace TerraLogic
         public float Right => X + Width;
         public float Bottom => Y + Height;
 
-        public RectangleF(float x, float y, float width, float height)
+        public Rect(float x, float y, float width, float height)
         {
             X = x;
             Y = y;
@@ -26,7 +26,7 @@ namespace TerraLogic
             Height = height;
         }
 
-        public RectangleF(Vector2 pos, Vector2 size)
+        public Rect(Vector2 pos, Vector2 size)
         {
             X = pos.X;
             Y = pos.Y;
@@ -51,12 +51,12 @@ namespace TerraLogic
             return Left <= v.X && Top <= v.Y && Right >= v.X && Bottom >= v.Y;
         }
 
-        public RectangleF Intersection(RectangleF rect)
+        public Rect Intersection(Rect rect)
         {
             Vector2 minBR = new(Math.Min(Right, rect.Right), Math.Min(Bottom, rect.Bottom));
             Vector2 maxTL = new(Math.Max(Left, rect.Left), Math.Max(Top, rect.Top));
 
-            return new RectangleF()
+            return new Rect()
             {
                 X = maxTL.X,
                 Y = maxTL.Y,
@@ -65,7 +65,7 @@ namespace TerraLogic
             };
         }
 
-        public static implicit operator RectangleF(Rectangle r) => new RectangleF(r.X, r.Y, r.Width, r.Height);
-        public static explicit operator Rectangle(RectangleF r) => new Rectangle((int)r.X, (int)r.Y, (int)r.Width, (int)r.Height);
+        public static implicit operator Rect(Rectangle r) => new Rect(r.X, r.Y, r.Width, r.Height);
+        public static explicit operator Rectangle(Rect r) => new Rectangle((int)r.X, (int)r.Y, (int)r.Width, (int)r.Height);
     }
 }

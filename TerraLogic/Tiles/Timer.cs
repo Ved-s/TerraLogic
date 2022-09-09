@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using TerraLogic.Structures;
 
 namespace TerraLogic.Tiles
 {
@@ -20,15 +21,15 @@ namespace TerraLogic.Tiles
         static readonly string[] Intervals = new string[] { "1/4", "1/2", "1", "3", "5" };
         static readonly uint[] IntervalValues = new uint[] { 15, 30, 60, 120, 300 };
 
-        static Texture2D Sprite;
+        static Texture2D Sprite = null!;
 
         internal TimerType Type = TimerType.Sec1;
         internal bool State = false;
         internal uint Counter = 0;
 
-        public override void Draw(TransformedGraphics graphics)
+        public override void Draw(Transform transform)
         {
-            graphics.DrawTileSprite(Sprite, (int)Type, State?1:0, Vector2.Zero, Color.White);
+            Graphics.DrawTileSprite(Sprite, (int)Type, State?1:0, transform.WorldToScreen(new Rect(0, 0, 16, 16)), Color.White);
         }
 
         public override void Update()
@@ -66,7 +67,7 @@ namespace TerraLogic.Tiles
             };
         }
 
-        public override Tile CreateTile(string data, bool preview)
+        public override Tile CreateTile(string? data, bool preview)
         {
             if (data is null || data.Length < 2) return new Timer();
 

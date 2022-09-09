@@ -10,9 +10,9 @@ namespace TerraLogic.GuiElements
 {
     public class UIButton : UIElement
     {
-        public UIButton(string name = null) : base(name) { }
+        public UIButton(string? name = null) : base(name) { }
 
-        public override void Draw(SpriteBatch spriteBatch)
+        public override void Draw()
         {
             Vector2 textSize = Font.MeasureString(Text);
             Vector2 textOffset = new Vector2(Bounds.Width, Bounds.Height) / 2 - textSize / 2;
@@ -26,19 +26,21 @@ namespace TerraLogic.GuiElements
 
             if (Hover)
             {
-                if (clicked) DrawBackground(spriteBatch, ClickColors.Value.Background);
-                else DrawBackground(spriteBatch, HoverColors.Background);
+                if (clicked && ClickColors is not null) 
+                    DrawBackground(ClickColors.Value.Background);
+                else 
+                    DrawBackground(HoverColors.Background);
             }
-            else DrawBackground(spriteBatch);
+            else DrawBackground();
 
-            if (OutlineColor != Color.Transparent) Graphics.DrawRectangle(spriteBatch, Bounds, OutlineColor);
+            if (OutlineColor != Color.Transparent) Graphics.DrawRectangle(Bounds, OutlineColor);
 
             Color text =
-                clicked ? ClickColors.Value.Foreground :
+                clicked && ClickColors is not null ? ClickColors.Value.Foreground :
                 Hover ? HoverColors.Foreground :
                 TextColor;
 
-            spriteBatch.DrawString(Font, Text, Bounds.Location.ToVector2() + textOffset, text);
+            TerraLogic.SpriteBatch.DrawString(Font, Text, Bounds.Location.ToVector2() + textOffset, text);
 
 
         }

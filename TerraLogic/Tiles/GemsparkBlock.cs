@@ -2,7 +2,9 @@
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using MonoGame.Framework.Utilities.Deflate;
 using System.IO;
+using TerraLogic.Structures;
 
 namespace TerraLogic.Tiles
 {
@@ -16,14 +18,14 @@ namespace TerraLogic.Tiles
         public bool State;
         public Color Color = Color.White;
 
-        static Texture2D Sprite;
+        static Texture2D Sprite = null!;
 
         public override void LoadContent(ContentManager content)
         {
             Sprite = content.Load<Texture2D>("Tiles/GemsparkBlock");
         }
 
-        public override void Draw(TransformedGraphics graphics)
+        public override void Draw(Transform transform)
         {
             Color c = Color;
 
@@ -33,7 +35,7 @@ namespace TerraLogic.Tiles
                 c.G /= 3;
                 c.B /= 3;
             }
-
+            Rectangle spriteRect = new(0, 0, 16, 16);
             if (Created)
             {
 
@@ -50,15 +52,13 @@ namespace TerraLogic.Tiles
                 if (World.Tiles[Pos.X - 1, Pos.Y - 1] is GemsparkBlock) neighbours |= 128;
 
               
-                Rectangle spriteRect = new Rectangle(
+                spriteRect = new Rectangle(
                     (int)(Gui.Logics.TileSize.X * PackedSprite.CalculatedPositions[neighbours].X),
                     (int)(Gui.Logics.TileSize.Y * PackedSprite.CalculatedPositions[neighbours].Y),
                     (int)(Gui.Logics.TileSize.X),
                     (int)(Gui.Logics.TileSize.Y));
-
-                graphics.Draw(Sprite, Vector2.Zero, spriteRect, c);
             }
-            else graphics.Draw(Sprite, Vector2.Zero, new Rectangle(0,0,16,16), c);
+            TerraLogic.SpriteBatch.Draw(Sprite, transform.Offset, spriteRect, c, 0f, Vector2.Zero, transform.Scale, SpriteEffects.None, 0f);
         }
 
         public override Tile Copy()
@@ -66,7 +66,7 @@ namespace TerraLogic.Tiles
             return new GemsparkBlock() { State = State, Color = Color };
         }
 
-        public override Tile CreateTile(string data, bool preview)
+        public override Tile CreateTile(string? data, bool preview)
         {
             if (data is null || data.Length != 7) return new GemsparkBlock();
 
@@ -86,7 +86,7 @@ namespace TerraLogic.Tiles
             if (held) return;
             if (TerraLogic.Root.CurrentKeys.IsKeyDown(Keys.LeftShift)) 
             {
-                Gui.ColorSelector.Instance.ShowDialog(Color, (cancel, color) =>
+                Gui.ColorSelector.Instance?.ShowDialog(Color, (cancel, color) =>
                 {
                     Color = (Color)color;
                 },

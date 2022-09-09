@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -157,7 +158,7 @@ namespace TerraLogic
             return true;
         }
 
-        public static bool IsNullEmptyOrWhitespace(this string str)
+        public static bool IsNullEmptyOrWhitespace([NotNullWhen(false)] this string? str)
             => string.IsNullOrWhiteSpace(str) || string.IsNullOrEmpty(str);
 
         public static Point Constrain(this Point p, Rectangle rect) 

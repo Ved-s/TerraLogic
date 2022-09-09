@@ -15,8 +15,8 @@ namespace TerraLogic.Gui
         public override Pos Width => 200;
         public override Pos Height => 150;
 
-        CompactMachine Tile;
-        public static CompactSizeSelector Instance;
+        CompactMachine Tile = null!;
+        public static CompactSizeSelector? Instance;
 
         public CompactSizeSelector(string name) : base(name) 
         {
@@ -124,22 +124,22 @@ namespace TerraLogic.Gui
                     OnClick = (caller) =>
                     {
                         Point inner = new(), outer = new();
-                        if (!int.TryParse(GetElement("./outerW").Text, out outer.X))
+                        if (!int.TryParse(GetElement("./outerW")!.Text, out outer.X))
                             outer.X = 1;
 
-                        if (!int.TryParse(GetElement("./outerH").Text, out outer.Y))
+                        if (!int.TryParse(GetElement("./outerH")!.Text, out outer.Y))
                             outer.Y = 1;
 
-                        if (!int.TryParse(GetElement("./innerW").Text, out inner.X))
+                        if (!int.TryParse(GetElement("./innerW")!.Text, out inner.X))
                             inner.X = outer.X + 2;
 
-                        if (!int.TryParse(GetElement("./innerH").Text, out inner.Y))
+                        if (!int.TryParse(GetElement("./innerH")!.Text, out inner.Y))
                             inner.Y = outer.Y + 2;
 
                         inner.X = Math.Max(outer.X + 2, inner.X);
                         inner.Y = Math.Max(outer.Y + 2, inner.Y);
 
-                        Tile.RespectWire = (GetElement("./respectColor") as UICheckButton).Checked;
+                        Tile.RespectWire = ((UICheckButton)GetElement("./respectColor")!)!.Checked;
                         Tile.InternalSize = inner;
                         Tile.ExternalSize = outer;
                         Visible = false;
@@ -153,25 +153,25 @@ namespace TerraLogic.Gui
             Visible = true;
             Tile = tile;
 
-            GetElement("./outerW").Text = Tile.ExternalSize.X.ToString();
-            GetElement("./outerH").Text = Tile.ExternalSize.Y.ToString();
-            GetElement("./innerW").Text = Tile.InternalSize.X.ToString();
-            GetElement("./innerH").Text = Tile.InternalSize.Y.ToString();
-            (GetElement("./respectColor") as UICheckButton).Checked = Tile.RespectWire;
+            GetElement("./outerW")!.Text = Tile.ExternalSize.X.ToString();
+            GetElement("./outerH")!.Text = Tile.ExternalSize.Y.ToString();
+            GetElement("./innerW")!.Text = Tile.InternalSize.X.ToString();
+            GetElement("./innerH")!.Text = Tile.InternalSize.Y.ToString();
+            ((UICheckButton)GetElement("./respectColor")!)!.Checked = Tile.RespectWire;
         }
 
         public override void Update()
         {
             base.Update();
         }
-        public override void Draw(SpriteBatch spriteBatch)
+        public override void Draw()
         {
-            DrawBackground(spriteBatch);
+            DrawBackground();
             Color outline = BackColor * 2;
             outline.A = 255;
-            Graphics.DrawRectangle(spriteBatch, Bounds, outline);
+            Graphics.DrawRectangle(Bounds, outline);
 
-            base.Draw(spriteBatch);
+            base.Draw();
 
             //Rectangle rect = new Rectangle(Bounds.X + 135, Bounds.Y + 10, 56, 56);
             //
@@ -183,7 +183,7 @@ namespace TerraLogic.Gui
             //spriteBatch.End();
             //spriteBatch.Begin();
             //
-            //Graphics.DrawRectangle(spriteBatch, rect, Color.White);
+            //Graphics.DrawRectangle(rect, Color.White);
             //
             //string str = $"{c.R} ({c.R:x2})";
             //int x = (56 - (int)TerraLogic.Consolas8.MeasureString(str).X) / 2 + Bounds.X + 135;

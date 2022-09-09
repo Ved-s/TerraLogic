@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using TerraLogic.GuiElements;
+using TerraLogic.Structures;
 
 namespace TerraLogic.Tiles
 {
@@ -29,7 +29,7 @@ namespace TerraLogic.Tiles
 
         public override bool NeedsContinuousUpdate => true;
 
-        static Texture2D Sprite;
+        static Texture2D Sprite = null!;
 
         internal int RedFade = 0;
 
@@ -59,15 +59,16 @@ namespace TerraLogic.Tiles
                 }
             }
         }
-        public override void Draw(TransformedGraphics graphics)
+        public override void Draw(Transform transform)
         {
-            if (IsFaulty) graphics.DrawTileSprite(Sprite, 2, GateId, Vector2.Zero, Color.White);
-            else graphics.DrawTileSprite(Sprite, (State | Display) ? 1 : 0, GateId, Vector2.Zero, Color.White);
+            if (IsFaulty) Graphics.DrawTileSprite(Sprite, 2, GateId, transform.WorldToScreen(new Rect(0,0,16,16)), Color.White);
+            else Graphics.DrawTileSprite(Sprite, (State | Display) ? 1 : 0, GateId, transform.WorldToScreen(new Rect(0, 0, 16, 16)), Color.White);
 
             if (RedFade > 0)
             {
                 Color c = Color.Red * (RedFade / 256f);
-                graphics.Draw(TerraLogic.Pixel, Vector2.Zero, new Rectangle(0, 0, 16, 16), c);
+                
+                Graphics.DrawRectangle(transform.WorldToScreen(new Rect(0, 0, 16, 16)), c);
                 RedFade--;
             }
         }
@@ -109,9 +110,8 @@ namespace TerraLogic.Tiles
             bool foundFaulty = false;
             bool faultyTriggered = false;
 
-            while (World.Tiles[Pos.X, scanPos] is LogicLamp)
+            while (World.Tiles[Pos.X, scanPos] is LogicLamp lamp)
             {
-                LogicLamp lamp = World.Tiles[Pos.X, scanPos] as LogicLamp;
                 switch (lamp.State)
                 {
                     case LogicLamp.LampState.Off: lamps.Add(false); break;
@@ -130,16 +130,16 @@ namespace TerraLogic.Tiles
 
         public override Tile Copy()
         {
-            LogicGate t = (LogicGate)Activator.CreateInstance(GetType());
+            LogicGate t = (LogicGate)Activator.CreateInstance(GetType())!;
             t.State = State;
             t.NewState = State;
             t.IsFaulty = IsFaulty;
             return t;
         }
 
-        public override Tile CreateTile(string data, bool preview)
+        public override Tile CreateTile(string? data, bool preview)
         {
-            LogicGate t = (LogicGate)Activator.CreateInstance(GetType());
+            LogicGate t = (LogicGate)Activator.CreateInstance(GetType())!;
             if (data is not null && data.Length >= 1)
             {
                 if (data[0] == '!') { t.Display = true; data = data.Substring(1); }
@@ -151,7 +151,7 @@ namespace TerraLogic.Tiles
             return t;
         }
 
-        internal override string GetData()
+        internal override string? GetData()
         {
             return (IsFaulty) ? "?" : (State) ? "+" : null;
         }

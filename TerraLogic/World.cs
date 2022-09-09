@@ -9,7 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using TerraLogic.Gui;
-using TerraLogic.GuiElements;
+using TerraLogic.Structures;
 using TerraLogic.Tiles;
 
 namespace TerraLogic
@@ -17,7 +17,7 @@ namespace TerraLogic
     public class World
     {
         public ChunkArray2D Wires { get; private set; }
-        public ChunkArray2D<Tile> Tiles { get; private set; }
+        public ChunkArray2D<Tile?> Tiles { get; private set; }
 
         public List<WireDebug> WireDebug { get; } = new List<WireDebug>();
 
@@ -26,17 +26,17 @@ namespace TerraLogic
         public int Width { get; private set; } = int.MaxValue;
         public int Height { get; private set; } = int.MaxValue;
 
-        public object Owner { get; set; }
+        public object? Owner { get; set; }
         public string WorldId { get; set; }
 
         public Rectangle WorldPos { get; set; }
 
         public float WorldZoom { get; set; } = 1f;
 
-        public RectangleF WorldScreenRect { get; set; }
-        public RectangleF WorldBackgroundRect { get; set; }
+        public Rect WorldScreenRect { get; set; }
+        public Rect WorldBackgroundRect { get; set; }
 
-        public RectangleF VisibleScreenRect { get; set; }
+        public Rect VisibleScreenRect { get; set; }
         public Rectangle VisibleWorldRect { get; set; }
 
         public bool Visible { get; set; } = true;
@@ -51,9 +51,9 @@ namespace TerraLogic
         public Color BackgroundColor { get; set; } = Color.Gray;
         public Color BackgroundOOBColor { get; set; } = new(9, 46, 51);
 
-        public World Parent { get; internal set; }
+        public World? Parent { get; internal set; }
 
-        public World(string id, object owner, World parent, int width, int height, Rectangle worldRect)
+        public World(string id, object? owner, World? parent, int width, int height, Rectangle worldRect)
         {
             WorldId = id;
             Owner = owner;
@@ -90,7 +90,7 @@ namespace TerraLogic
                 if (!w.IsAtOrigin)
                 {
                     Tile t = Tiles[w.X, w.Y];
-                    if (t != null)
+                    if (t is not null)
                     {
                         Point inPos = new Point(w.X - t.Pos.X, w.Y - t.Pos.Y);
                         t.WireSignal(w.Wire, w.Origin, inPos);
@@ -312,7 +312,7 @@ namespace TerraLogic
 
         public void SetTile(Point pos, string tileid = null, Tile reference = null, bool noUpdates = false, bool ignoreIndestructible = false)
             => SetTile(pos.X, pos.Y, tileid, reference, noUpdates, ignoreIndestructible);
-        public void SetTile(int x, int y, string tileid = null, Tile reference = null, bool noUpdates = false, bool ignoreIndestructible = false)
+        public void SetTile(int x, int y, string? tileid = null, Tile? reference = null, bool noUpdates = false, bool ignoreIndestructible = false)
         {
             if (!CheckInBounds(x, y)) return;
 
@@ -351,13 +351,13 @@ namespace TerraLogic
                     if (!noUpdates) t.PlacedInWorld();
                 }
         }
-        public void SetTile(Point pos, Tile tile = null, bool noUpdates = false, bool ignoreIndestructible = false)
+        public void SetTile(Point pos, Tile? tile = null, bool noUpdates = false, bool ignoreIndestructible = false)
             => SetTile(pos.X, pos.Y, tile, noUpdates, ignoreIndestructible);
-        public void SetTile(int x, int y, Tile tile = null, bool noUpdates = false, bool ignoreIndestructible = false)
+        public void SetTile(int x, int y, Tile? tile = null, bool noUpdates = false, bool ignoreIndestructible = false)
         {
             if (!CheckInBounds(x, y)) return;
 
-            Tile t = Tiles[x, y];
+            Tile? t = Tiles[x, y];
 
             if (t is not null && !t.CanRemove && !ignoreIndestructible) return;
 
@@ -390,7 +390,7 @@ namespace TerraLogic
             for (int ty = y; ty < t.Size.Y + y; ty++)
                 for (int tx = x; tx < t.Size.X + x; tx++)
                 {
-                    if (Tiles[tx, ty] != null || !CheckInBounds(tx, ty)) return false;
+                    if (Tiles[tx, ty] is not null || !CheckInBounds(tx, ty)) return false;
                 }
             return true;
 
@@ -407,8 +407,8 @@ namespace TerraLogic
         {
             if (!CheckInBounds(x, y)) return;
 
-            Tile t = Tiles[x, y];
-            if (t != null)
+            Tile? t = Tiles[x, y];
+            if (t is not null)
             {
                 t.RightClick(held, false);
             }
@@ -423,21 +423,22 @@ namespace TerraLogic
             if (Parent is not null)
             {
                 TerraLogic.SpriteBatch.Begin();
-                Graphics.FillRectangle(TerraLogic.SpriteBatch, (Rectangle)WorldBackgroundRect, BackgroundOOBColor);
-                Graphics.FillRectangle(TerraLogic.SpriteBatch, (Rectangle)WorldScreenRect, BackgroundColor);
+                Graphics.FillRectangle((Rectangle)WorldBackgroundRect, BackgroundOOBColor);
+                Graphics.FillRectangle((Rectangle)WorldScreenRect, BackgroundColor);
                 TerraLogic.SpriteBatch.End();
             }
 
             DrawTiles(blendState);
-            if (Logics.SelectedWire > 0
-                || Logics.SelectedTileId != null
+            if (Logics.PastePreview is not null
+                || Logics.SelectedWire > 0
+                || Logics.SelectedTileId is not null
                 || (Logics.SelectedToolId > -1 && Logics.Tools[Logics.SelectedToolId].ShowWires))
                 DrawWires(Wires, blendState);
 
             DrawWireDebug();
             DrawTopMostTiles(blendState);
             DrawTilePreview();
-            
+
         }
         public void Update()
         {
@@ -462,7 +463,7 @@ namespace TerraLogic
                     if (!tile.Item.NeedsContinuousUpdate) tile.Item.NeedsUpdate = false;
                 }
             }
-                
+
 
             WireDebug.RemoveAll(wd => wd.Fade <= 0);
 
@@ -490,15 +491,15 @@ namespace TerraLogic
 
                 WorldZoom = Parent.WorldZoom * Math.Min(zoomV, zoomH);
 
-                RectangleF worldScreen = new();
-                RectangleF worldBack = new();
+                Rect worldScreen = new();
+                Rect worldBack = new();
 
-                RectangleF fixedWorldPos = WorldPos;
+                Rect fixedWorldPos = WorldPos;
 
                 fixedWorldPos.Location += new Vector2(Padding);
                 fixedWorldPos.Size -= new Vector2(Padding * 2);
 
-                RectangleF paddedWorldPos = fixedWorldPos;
+                Rect paddedWorldPos = fixedWorldPos;
 
                 if (zoomV != zoomH)
                 {
@@ -532,9 +533,9 @@ namespace TerraLogic
                 WorldScreenRect = worldScreen;
                 WorldBackgroundRect = worldBack;
 
-                RectangleF fullScreen = new(0, 0, TerraLogic.Instance.Window.ClientBounds.Width, TerraLogic.Instance.Window.ClientBounds.Height);
+                Rect fullScreen = new(0, 0, TerraLogic.Instance.Window.ClientBounds.Width, TerraLogic.Instance.Window.ClientBounds.Height);
                 VisibleScreenRect = fullScreen.Intersection(WorldScreenRect);
-                RectangleF worldRect = ScreenToWorld(VisibleScreenRect);
+                Rect worldRect = ScreenToWorld(VisibleScreenRect);
                 VisibleWorldRect = new Rectangle()
                 {
                     X = (int)worldRect.X / Logics.TileSize.X,
@@ -547,14 +548,14 @@ namespace TerraLogic
 
         internal void DrawWires(ChunkArray2D wires, BlendState blendState)
         {
-            TerraLogic.SpriteBatch.Begin(SpriteSortMode.Deferred, blendState, WorldZoom > 1 ? SamplerState.PointWrap : SamplerState.LinearWrap, null, null);
+            TerraLogic.SpriteBatch.Begin(SpriteSortMode.Deferred, blendState, WorldZoom > 1 ? SamplerState.PointClamp : SamplerState.LinearClamp, null, null);
 
             int wireTop;
             int wireLeft;
             int wireBottom;
             int wireRight;
 
-            Rectangle rect;
+            Vector2 pos;
 
             for (int y = VisibleWorldRect.Top; y <= Math.Min(VisibleWorldRect.Bottom, wires.Height); y++)
                 for (int x = VisibleWorldRect.Left; x <= Math.Min(VisibleWorldRect.Right, wires.Width); x++)
@@ -578,7 +579,8 @@ namespace TerraLogic
                     wireBottom = wires[x, y + 1];
                     wireRight = wires[x + 1, y];
 
-                    rect = new Rectangle(x * Logics.TileSize.X, y * Logics.TileSize.Y, Logics.TileSize.X, Logics.TileSize.Y);
+                    pos = new(x * Logics.TileSize.X, y * Logics.TileSize.Y);
+                    pos = WorldToScreen(pos);
 
                     void DrawWire(byte id)
                     {
@@ -586,13 +588,9 @@ namespace TerraLogic
 
                         Color c = Logics.WireColorMapping[id];
 
-
-
                         if (!GetWire(Logics.SelectedWire, id))
                         {
-                            if (Logics.SelectedWire.Bits() == 1)
-                                c *= 0.5f;
-                            else c *= 0.25f;
+                            c *= 0.3f;
                         }
                         else
                         {
@@ -600,8 +598,9 @@ namespace TerraLogic
                             anySelectedWireDrawn = true;
                         }
 
-                        TerraLogic.SpriteBatch.Draw(wireSprite, WorldToScreen(rect), Logics.CalculateWireSpriteOffset(GetWire(wireTop, id), GetWire(wireRight, id), GetWire(wireBottom, id), GetWire(wireLeft, id)), c, 0f, Vector2.Zero, SpriteEffects.None, 0);
+                        Rectangle source = Logics.CalculateWireSpriteOffset(GetWire(wireTop, id), GetWire(wireRight, id), GetWire(wireBottom, id), GetWire(wireLeft, id));
 
+                        TerraLogic.SpriteBatch.Draw(wireSprite, pos, source, c, 0f, Vector2.Zero, WorldZoom, SpriteEffects.None, 0);
                     }
 
                     for (byte id = 0; id < Logics.WireColorMapping.Count; id++)
@@ -624,7 +623,7 @@ namespace TerraLogic
 
                     if (tile is null) continue;
 
-                    if (tile.Pos.X != x || tile.Pos.Y != y) 
+                    if (tile.Pos.X != x || tile.Pos.Y != y)
                     {
                         int maxTop = Math.Max(VisibleWorldRect.Top, tile.Pos.Y);
                         int maxLeft = Math.Max(VisibleWorldRect.Left, tile.Pos.X);
@@ -659,8 +658,8 @@ namespace TerraLogic
                     Color c = Logics.GetWireColor(wd.Signal.Wire);
                     c *= (wd.Fade / 300f);
 
-                    Graphics.DrawRectangle(TerraLogic.SpriteBatch, WorldToScreen(new Rectangle(wd.Signal.Origin.X * Logics.TileSize.X, wd.Signal.Origin.Y * Logics.TileSize.Y, Logics.TileSize.X, Logics.TileSize.Y)), c);
-                    Graphics.DrawLineWithText(TerraLogic.SpriteBatch,
+                    Graphics.DrawRectangle(WorldToScreen(new Rectangle(wd.Signal.Origin.X * Logics.TileSize.X, wd.Signal.Origin.Y * Logics.TileSize.Y, Logics.TileSize.X, Logics.TileSize.Y)), c);
+                    Graphics.DrawLineWithText(
                         WorldToScreen(originCenter.ToVector2()).ToPoint(),
                         WorldToScreen(new Vector2((wd.Signal.X * Logics.TileSize.X) + (Logics.TileSize.X / 2), (wd.Signal.Y * Logics.TileSize.Y) + (Logics.TileSize.Y / 2))).ToPoint(),
                         Logics.Instance.Font, wd.Count.ToString(), c);
@@ -698,14 +697,9 @@ namespace TerraLogic
                     WorldToScreen(new Rectangle(wp.X * 16, wp.Y * 16, 16, 16)),
                     Color.White);
 
-            else if (Logics.SelectedTilePreview != null && CanSetTile(wp.X, wp.Y, Logics.SelectedTilePreview))
+            else if (Logics.SelectedTilePreview is not null && CanSetTile(wp.X, wp.Y, Logics.SelectedTilePreview))
             {
-                Vector2 pos = WorldScreenRect.Location;
-                pos += WorldZoom * Logics.TileSize.ToVector2() * wp.ToVector2();
-
-                TransformedGraphics graphics = new(pos, WorldZoom);
-
-                Logics.SelectedTilePreview.Draw(graphics);
+                Logics.SelectedTilePreview.Draw(new(TilesToScreen(new(wp.X, wp.Y)), WorldZoom));
             }
             TerraLogic.SpriteBatch.End();
         }
@@ -722,56 +716,59 @@ namespace TerraLogic
 
         private void DrawTile(Tile t)
         {
-            Vector2 pos = WorldScreenRect.Location;
-            pos += WorldZoom * Logics.TileSize.ToVector2() * t.Pos.ToVector2();
-
-            TransformedGraphics graphics = new(pos, WorldZoom);
-            t.Draw(graphics);
+            Transform transform = new(TilesToScreen(t.Pos), WorldZoom);
+            t.Draw(transform);
         }
 
-        public Vector2 ScreenToWorld(Point p)
+        public Vector2 ScreenToWorld(Point screenPos)
         {
             Vector2 v = new Vector2();
-            v.X = (p.X - WorldScreenRect.X) / WorldZoom;
-            v.Y = (p.Y - WorldScreenRect.Y) / WorldZoom;
+            v.X = (screenPos.X - WorldScreenRect.X) / WorldZoom;
+            v.Y = (screenPos.Y - WorldScreenRect.Y) / WorldZoom;
             return v;
         }
-        public Vector2 ScreenToTiles(Point p)
+        public Vector2 WorldToScreen(Vector2 worldPos)
+        {
+            return worldPos * WorldZoom + WorldScreenRect.Location;
+        }
+
+        public Rectangle ScreenToWorld(Rectangle screenPos)
+        {
+            screenPos.X = (int)((screenPos.X - WorldScreenRect.X) / WorldZoom);
+            screenPos.Y = (int)((screenPos.Y - WorldScreenRect.Y) / WorldZoom);
+            screenPos.Width = (int)(screenPos.Width / WorldZoom);
+            screenPos.Height = (int)(screenPos.Height / WorldZoom);
+            return screenPos;
+        }
+        public Rect ScreenToWorld(Rect screenRect)
+        {
+            screenRect.X = (screenRect.X - WorldScreenRect.X) / WorldZoom;
+            screenRect.Y = (screenRect.Y - WorldScreenRect.Y) / WorldZoom;
+            screenRect.Width = screenRect.Width / WorldZoom;
+            screenRect.Height = screenRect.Height / WorldZoom;
+            return screenRect;
+        }
+        public Rectangle WorldToScreen(Rectangle worldRect)
+        {
+            worldRect.Location = (worldRect.Location.ToVector2() * WorldZoom).ToPoint();
+            worldRect.Location += WorldScreenRect.Location.ToPoint();
+
+            worldRect.Width = (int)(worldRect.Width * WorldZoom);
+            worldRect.Height = (int)(worldRect.Height * WorldZoom);
+
+            return worldRect;
+        }
+
+        public Vector2 ScreenToTiles(Point screenPos)
         {
             Vector2 v = new();
-            v.X = ((p.X - WorldScreenRect.X) / WorldZoom) / Logics.TileSize.X;
-            v.Y = ((p.Y - WorldScreenRect.Y) / WorldZoom) / Logics.TileSize.Y;
+            v.X = ((screenPos.X - WorldScreenRect.X) / WorldZoom) / Logics.TileSize.X;
+            v.Y = ((screenPos.Y - WorldScreenRect.Y) / WorldZoom) / Logics.TileSize.Y;
             return v;
         }
-        public Rectangle ScreenToWorld(Rectangle p)
+        public Vector2 TilesToScreen(Point tilePos)
         {
-            p.X = (int)((p.X - WorldScreenRect.X) / WorldZoom);
-            p.Y = (int)((p.Y - WorldScreenRect.Y) / WorldZoom);
-            p.Width = (int)(p.Width / WorldZoom);
-            p.Height = (int)(p.Height / WorldZoom);
-            return p;
-        }
-        public RectangleF ScreenToWorld(RectangleF p)
-        {
-            p.X = (p.X - WorldScreenRect.X) / WorldZoom;
-            p.Y = (p.Y - WorldScreenRect.Y) / WorldZoom;
-            p.Width = p.Width / WorldZoom;
-            p.Height = p.Height / WorldZoom;
-            return p;
-        }
-        public Rectangle WorldToScreen(Rectangle rect)
-        {
-            rect.Location = (rect.Location.ToVector2() * WorldZoom).ToPoint();
-            rect.Location += WorldScreenRect.Location.ToPoint();
-
-            rect.Width = (int)(rect.Width * WorldZoom);
-            rect.Height = (int)(rect.Height * WorldZoom);
-
-            return rect;
-        }
-        public Vector2 WorldToScreen(Vector2 v)
-        {
-            return v * WorldZoom + WorldScreenRect.Location;
+            return WorldToScreen(tilePos.Multiply(Logics.TileSize).ToVector2());
         }
 
         public World Copy(Rectangle rect)
@@ -781,7 +778,7 @@ namespace TerraLogic
             World world = new World("copiedWorld", this, null, rect.Width, rect.Height, new(Point.Zero, rect.Size));
 
             for (int i = rect.Left; i < rect.Right; i++)
-                for (int j = rect.Top; j < rect.Bottom; j++) 
+                for (int j = rect.Top; j < rect.Bottom; j++)
                 {
                     int lx = i - rect.Left;
                     int ly = j - rect.Top;
@@ -795,7 +792,7 @@ namespace TerraLogic
                     if (t.Pos.X != i || t.Pos.Y != j) continue;
                     t = t.Copy();
                     world.SetTile(lx, ly, t, true);
-                    
+
                 }
             return world;
         }
@@ -838,7 +835,7 @@ namespace TerraLogic
                     if (t.Pos.X != lx || t.Pos.Y != ly) continue;
                     t = t.Copy();
                     SetTile(i, j, t, true);
-                    
+
                 }
         }
 
@@ -929,7 +926,7 @@ namespace TerraLogic
 
             int typeIndex = 0;
             Dictionary<string, int> typeMap = new();
-            
+
             foreach (ChunkArray2D<Tile>.ChunkItem tile in Tiles)
             {
                 string id = tile.Item.Id;
@@ -1006,7 +1003,7 @@ namespace TerraLogic
 
                     Debug.WriteLine($"Data saved: world: written {cdiff} bytes");
                 }
-                else 
+                else
                 {
                     writer.Write(-1);
                     writer.Write((int)memoryStream.Length);
@@ -1015,7 +1012,7 @@ namespace TerraLogic
                     Debug.WriteLine($"Data saved: world: written {memoryStream.Length} bytes (uncompressed)");
                 }
 
-                
+
             }
         }
 
@@ -1036,7 +1033,7 @@ namespace TerraLogic
                     tileBuilder.Append(y);
                     tileBuilder.Append(':');
                     string data = t.GetData();
-                    if (data != null)
+                    if (data is not null)
                         tileBuilder.Append(t.Id + ":" + data);
                     else
                         tileBuilder.Append(t.Id);
@@ -1079,115 +1076,9 @@ namespace TerraLogic
                 Logics.WireColorMapping.Add(new Color() { PackedValue = uint.Parse(c) });
         }
 
-        internal void CopyToClipboardOld(Rectangle selection)
-        {
-            StringBuilder tileBuilder = new StringBuilder();
-            for (int y = selection.Y; y < selection.Bottom; y++)
-                for (int x = selection.X; x < selection.Right; x++)
-                {
-                    Tile t = Tiles[x, y];
-                    if (t is null) continue;
-                    if (x != t.Pos.X || y != t.Pos.Y) continue;
-            
-                    tileBuilder.Append(x - selection.X);
-                    tileBuilder.Append(',');
-                    tileBuilder.Append(y - selection.Y);
-                    tileBuilder.Append(':');
-                    string data = t.GetData();
-                    if (data != null)
-                        tileBuilder.Append(t.Id + ":" + data);
-                    else
-                        tileBuilder.Append(t.Id);
-            
-                    tileBuilder.Append(';');
-                }
-            
-            ClipboardUtils.Text = Wires.ToPartialDataString(selection) + tileBuilder.ToString();
-        }
-        internal static void LoadFromClipboardOld()
-        {
-            string[] data = ClipboardUtils.Text.Split(new char[] { ';' }, 2);
-            if (data.Length != 2) return;
-            
-            data[0] = data[0] + ';';
-            
-            Match header = ChunkArray2D.ChunkRegex.Match(data[0]);
-            if (!header.Success) return;
-
-            Regex ChunkRegex = new Regex("(\\d+),(\\d+):([^;]*);");
-
-            Point size = new Point(int.Parse(header.Groups[1].Value), int.Parse(header.Groups[2].Value));
-            Tile[,] tiles = new Tile[size.X, size.Y];
-            foreach (Match tile in ChunkRegex.Matches(data[1]))
-            {
-                int x = int.Parse(tile.Groups[1].Value);
-                int y = int.Parse(tile.Groups[2].Value);
-                string[] tileData = tile.Groups[3].Value.Split(new char[] { ':' }, 2);
-            
-                if (Logics.TileMap.TryGetValue(tileData[0], out Tile newTile))
-                {
-                    tiles[x, y] = newTile.CreateTile(tileData.Length == 1 ? null : tileData[1], false);
-                }
-            }
-            
-            if (Logics.SelectedToolId != -1)
-                Logics.Tools[Logics.SelectedToolId].IsSelected = false;
-            Logics.SelectedToolId = -1;
-            Logics.SelectedTileId = null;
-            Logics.SelectedTilePreview = null;
-            Logics.SelectedWire = 0;
-            Tools.Select.Instance.Selection = new Rectangle();
-            //Logics.PastePreview = new PastePreview() { WireData = data[0], Size = size, Tiles = tiles };
-        }
-
         public override string ToString()
         {
-            return $"{WorldId} @ {WorldPos.X} {WorldPos.Y}" + (Owner is null? "" : $", owned by {{{Owner}}}");
-        }
-    }
-
-    public struct TransformedGraphics
-    {
-        private Vector2 Offset;
-        private float Scale;
-
-        public TransformedGraphics(Vector2 offset, float scale)
-        {
-            Offset = offset;
-            Scale = scale;
-        }
-
-        public void Draw(Texture2D tex, Vector2 position, Color c)
-        {
-            TerraLogic.SpriteBatch.Draw(tex, position + Offset, null, c, 0f, Vector2.Zero, Scale, SpriteEffects.None, 0f);
-        }
-        public void Draw(Texture2D tex, Vector2 position, Rectangle? source, Color c)
-        {
-            TerraLogic.SpriteBatch.Draw(tex, position + Offset, source, c, 0f, Vector2.Zero, Scale, SpriteEffects.None, 0f);
-        }
-
-        public void Draw(Texture2D tex, Rectangle rect, Color c)
-        {
-            rect.Location += Offset.ToPoint();
-            rect.Size = (rect.Size.ToVector2() * Scale).ToPoint();
-            TerraLogic.SpriteBatch.Draw(tex, rect, c);
-        }
-
-        public void Draw(Texture2D tex, Rectangle rect, Rectangle? source, Color c)
-        {
-            Vector2 newSize = rect.Size.ToVector2() * Scale;
-            newSize.Ceiling();
-
-            rect.Location = (rect.Location.ToVector2() * Scale + Offset).ToPoint();
-            rect.Size = newSize.ToPoint();
-            TerraLogic.SpriteBatch.Draw(tex, rect, source, c);
-        }
-
-        public void DrawTileSprite(Texture2D sprite, int spriteX, int spriteY, Vector2 pos, Color color, int tileWidth = 1, int tileHeight = 1)
-        {
-            pos += Offset;
-            Rectangle source = new Rectangle(spriteX * tileWidth * Logics.TileSize.X, spriteY * tileHeight * Logics.TileSize.Y, tileWidth * Logics.TileSize.X, tileHeight * Logics.TileSize.Y);
-            TerraLogic.SpriteBatch.Draw(sprite, pos, source, color, 0f, Vector2.Zero, Scale, SpriteEffects.None, 0f);
+            return $"{WorldId} @ {WorldPos.X} {WorldPos.Y}" + (Owner is null ? "" : $", owned by {{{Owner}}}");
         }
     }
 }

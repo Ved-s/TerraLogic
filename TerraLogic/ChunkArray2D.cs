@@ -30,6 +30,12 @@ namespace TerraLogic
 
         public int? QuickUnsafeGet(int x, int y) => ChunkMap[x / ChunkSize, y / ChunkSize]?[x % ChunkSize, y % ChunkSize];
 
+        public int this[Point p] 
+        {
+            get => this[p.X, p.Y];
+            set => this[p.X, p.Y] = value;
+        }
+
         public int this[int x, int y] 
         {
             get 
@@ -229,6 +235,12 @@ namespace TerraLogic
             T[,] ch = ChunkMap[x / ChunkSize, y / ChunkSize];
             if (ch is null) return;
             ch[x % ChunkSize, y % ChunkSize] = value;
+        }
+
+        public T this[Point p]
+        {
+            get => this[p.X, p.Y];
+            set => this[p.X, p.Y] = value;
         }
 
         public T this[int x, int y]

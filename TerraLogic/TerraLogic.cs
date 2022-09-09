@@ -10,18 +10,18 @@ namespace TerraLogic
 {
     public class TerraLogic : Game
     {
-        internal static GraphicsDeviceManager Graphics;
-        internal static SpriteBatch SpriteBatch;
-        internal static TerraLogic Instance;
+        internal static GraphicsDeviceManager Graphics = null!;
+        internal static SpriteBatch SpriteBatch = null!;
+        internal static TerraLogic Instance = null!;
 
-        internal static Texture2D GridTex;
-        internal static Texture2D MoreTex;
-        internal static Texture2D Pixel;
-        internal static Effect Gradient;
+        internal static Texture2D GridTex = null!;
+        internal static Texture2D MoreTex = null!;
+        internal static Texture2D Pixel = null!;
+        internal static Effect Gradient = null!;
 
-        internal static SpriteFont Consolas12;
-        internal static SpriteFont Consolas10;
-        internal static SpriteFont Consolas8;
+        internal static SpriteFont Consolas12 = null!;
+        internal static SpriteFont Consolas10 = null!;
+        internal static SpriteFont Consolas8 = null!;
 
         internal Process ThisProcess = Process.GetCurrentProcess();
 
@@ -31,7 +31,7 @@ namespace TerraLogic
 
         ulong RanUpdates = 0;
 
-        internal static UIRoot Root;
+        internal static UIRoot Root = null!;
 
         public TerraLogic()
         {
@@ -119,12 +119,12 @@ namespace TerraLogic
                                 OnClick = (caller) =>
                                 {
                                     caller.Visible = false;
-                                    caller.GetElement("../loadData").Visible = false;
-                                    (caller.GetElement("../fileSelect") as Gui.FileSelector).ShowDialog(true, (cancel, file) =>
+                                    caller.GetElement("../loadData")!.Visible = false;
+                                    ((Gui.FileSelector)caller.GetElement("../fileSelect")!).ShowDialog(true, (cancel, file) =>
                                     {
-                                        if (!cancel) Gui.Logics.SaveFile(file);
+                                        if (!cancel) Gui.Logics.SaveFile(file!);
                                         caller.Visible = true;
-                                        caller.GetElement("../loadData").Visible = true;
+                                        caller.GetElement("../loadData")!.Visible = true;
                                     });
                                 }
                             },
@@ -141,12 +141,12 @@ namespace TerraLogic
                                 OnClick = (caller) =>
                                 {
                                     caller.Visible = false;
-                                    caller.GetElement("../saveData").Visible = false;
-                                    (caller.GetElement("../fileSelect") as Gui.FileSelector).ShowDialog(false, (cancel, file) =>
+                                    caller.GetElement("../saveData")!.Visible = false;
+                                    ((Gui.FileSelector)caller.GetElement("../fileSelect")!).ShowDialog(false, (cancel, file) =>
                                     {
-                                        if (!cancel) Gui.Logics.LoadFile(file);
+                                        if (!cancel) Gui.Logics.LoadFile(file!);
                                         caller.Visible = true;
-                                        caller.GetElement("../saveData").Visible = true;
+                                        caller.GetElement("../saveData")!.Visible = true;
                                     });
                                 }
                             },
@@ -195,9 +195,9 @@ namespace TerraLogic
 
                                         OnClick = (b) =>
                                         {
-                                            UICheckButton cb = b as UICheckButton;
+                                            UICheckButton cb = (UICheckButton)b;
                                             cb.Text = cb.Checked? "Run" : "Pause simulation";
-                                            cb.GetElement("../step").Visible = cb.Checked;
+                                            cb.GetElement("../step")!.Visible = cb.Checked;
                                             cb.Width = cb.Checked? 60 : 125;
 
                                             Gui.Logics.UpdatePaused = cb.Checked;
@@ -226,7 +226,7 @@ namespace TerraLogic
                                         ClickColors = new Colors(Color.White, 128, 128, 128),
                                         OutlineColor = new Color(64,64,64),
                                         Text = "Debug",
-                                        OnClick = (b) => Gui.Logics.WireDebugActive = (b as UICheckButton).Checked
+                                        OnClick = (b) => Gui.Logics.WireDebugActive = (b as UICheckButton)!.Checked
                                     }
                                 }
                             }
@@ -240,12 +240,12 @@ namespace TerraLogic
                         switch(key) 
                         {
                             case Keys.F1:
-                                UIElement overlay = caller.GetElement(".overlay");
+                                UIElement overlay = caller.GetElement(".overlay")!;
                                 overlay.Visible = !overlay.Visible;
                                 break;
 
                             case Keys.F9:
-                                UIElement debug = caller.GetElement(".overlay/debug");
+                                UIElement debug = caller.GetElement(".overlay/debug")!;
                                 debug.Visible = !debug.Visible;
                                 break;
                         }
@@ -297,7 +297,7 @@ namespace TerraLogic
             TmpTime = DateTime.Now;
             GraphicsDevice.Clear(new Color(48, 48, 48, 128));
 
-            Root.Draw(SpriteBatch);
+            Root.Draw();
 
             base.Draw(gameTime);
             DrawTimeMS = (float)(DateTime.Now - TmpTime).TotalMilliseconds;

@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using TerraLogic.Structures;
 
 namespace TerraLogic.Tiles
 {
@@ -18,9 +19,9 @@ namespace TerraLogic.Tiles
 
         static Texture2D Sprite;
 
-        public override void Draw(TransformedGraphics graphics)
+        public override void Draw(Transform transform)
         {
-            graphics.DrawTileSprite(Sprite, State?1:0, 0, Vector2.Zero, Color.White);
+            Graphics.DrawTileSprite(Sprite, State?1:0, 0, transform.WorldToScreen(new Rect(0, 0, 16, 16)), Color.White);
         }
 
         public override Tile Copy()
@@ -28,7 +29,7 @@ namespace TerraLogic.Tiles
             return new Switch() { State = State };
         }
 
-        public override Tile CreateTile(string data, bool preview)
+        public override Tile CreateTile(string? data, bool preview)
         {
             return new Switch() { State = data == "+" };
         }

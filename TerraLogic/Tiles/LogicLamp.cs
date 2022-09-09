@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using TerraLogic.Structures;
 
 namespace TerraLogic.Tiles
 {
@@ -18,11 +19,11 @@ namespace TerraLogic.Tiles
 
         internal LampState State;
 
-        public override void Draw(TransformedGraphics graphics)
+        public override void Draw(Transform transform)
         {
-            graphics.DrawTileSprite(
+            Graphics.DrawTileSprite(
                 Sprite, Math.Min((int)State, 2), 0,
-                Vector2.Zero, Color.White);
+                transform.WorldToScreen(new Rect(0, 0, 16, 16)), Color.White);
         }
 
         public override void PlacedInWorld()
@@ -35,9 +36,8 @@ namespace TerraLogic.Tiles
             bool foundFaulty = false;
             bool faultyTriggered = false;
 
-            while (World.Tiles[Pos.X, scanPos] is LogicLamp)
+            while (World.Tiles[Pos.X, scanPos] is LogicLamp lamp)
             {
-                LogicLamp lamp = World.Tiles[Pos.X, scanPos] as LogicLamp;
                 switch (lamp.State)
                 {
                     case LampState.Off: lamps.Add(false); break;
@@ -72,7 +72,7 @@ namespace TerraLogic.Tiles
             return new LogicLamp() { State = State };
         }
 
-        public override Tile CreateTile(string data, bool preview)
+        public override Tile CreateTile(string? data, bool preview)
         {
             return new LogicLamp() { State = (data == "+") ? LampState.On : (data == "?") ? LampState.Faulty : LampState.Off };
         }
